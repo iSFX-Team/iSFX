@@ -1,0 +1,13 @@
+*.[oa]
+*.DS_Store
+*~
+Lib/Python/build
+Lib/Python/*.pyd
+Lib/Python/*.dll
+Lib/Python/*.dylib
+Lib/Python/*.so
+Lib/C++/*.dylib
+App/*.so
+App/*.dll
+App/*.dylib
+App/*.pyd
