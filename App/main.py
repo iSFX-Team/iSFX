@@ -46,6 +46,9 @@ if os.path.exists("sounds"):
 elif os.path.exists(os.path.join(os.pardir, "sounds")):
   files = os.listdir(os.path.join(os.pardir, "sounds"))
   path = os.path.join(os.pardir, "sounds")
+elif os.path.exists(os.path.join(os.pardir, os.pardir, "sounds")):
+  files = os.listdir(os.path.join(os.pardir, os.pardir, "sounds"))
+  path = os.path.join(os.pardir, os.pardir, "sounds")
 for f in files:
   if f == ".DS_Store": continue
   if f == "README": continue
@@ -58,7 +61,7 @@ for f in files:
   #s.setNewLengthCallback(e.setProgress)
   s.setNewNameCallback(e.setName)
   s.setInStateCallback(e.setState)
-  s.setNowStoppedCallback(e.nowStopped)
+  s.setPlayingCallback(e.nowPlaying)
   e.buttonSignal.connect(s.playStop)
   e.setText(s.getName())
   songs.append(s)

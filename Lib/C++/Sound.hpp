@@ -22,57 +22,48 @@ namespace iSFX {
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
+
 struct Sound {
+private:
   System &system;
   FMOD::Sound *sound;
   FMOD::Channel *channel;
   EffectManager<double> volume_manager;
-  Fader fade_in;
-  Fader fade_out;
-  Fader fade_stop;
+  
+  Fader fade_on_enter;
+  Fader fade_on_exit;
+  Fader fade_to_stop;
+  Fader fade_to_pause;
+  Fader fade_on_resume;
 
-  std::string url;
-  std::string name;
-
-  float fade_amount;
-  uint32_t fade_duration; //ms
-
-
+  // constantly updated
   bool paused;
   bool playing;
-  
+  uint32_t position;
+  double percent;
+  double volume;
   uint32_t open_state;
   bool opening;
-  uint32_t buffered;
+  uint32_t buffered; // this looks like you only get a value for streams
   bool starving;
   bool disk_busy;
-  
+
+  // semi-constant
+  std::string url;
+  std::string name;
   uint32_t length_ms;
   uint32_t length_pcm;
   uint32_t length_pcmbytes;
-  
-  double percent;
-  uint32_t position;
   uint32_t start;
   uint32_t stop;
-  double volume;
-  float max_volume;
-  float min_volume;
   struct {
     float volume;
     float frequency;
     float pan;
     int priority;
-  } defaults;  
-  
-  //Fader fade_on_enter;
-  //Fader fade_on_play;
-  //Fader fade_on_stop;
-  //Fader fade_on_pause;
-  //Fader fade_on_exit;
-  //boost::signals2::signal<void(uint32_t)> effect_signal;
-  //std::map<uint32_t, std::list<Effect*> > effects;
-  
+  } defaults;
+  float max_volume;
+  float min_volume;
   FMOD_SOUND_TYPE type;
   FMOD_SOUND_FORMAT format;
   int channels;
@@ -80,44 +71,43 @@ struct Sound {
   int numtags;
   std::map<std::string, std::vector<FMOD_TAG> > tags;
 
+public:
+  /////////////////////////////////////////////////////////////////////////////
+  ///                                                                          
+  ///   Signals to signal Events                                                   
+  ///                                                                          
+  ///
   boost::signals2::scoped_connection system_update_connection;
-  boost::signals2::signal<void( uint32_t    )> now_at_position;
-  boost::signals2::signal<void( double      )> now_at_percent;
-  boost::signals2::signal<void(             )> now_playing;
-  boost::signals2::signal<void(             )> now_paused;
-  boost::signals2::signal<void(             )> now_unpaused;
-  boost::signals2::signal<void(             )> now_stopped;
-  boost::signals2::signal<void(             )> now_finished;
-                                           
-  boost::signals2::signal<void( uint32_t    )> now_in_state;
-  boost::signals2::signal<void( bool        )> now_starving;
-                                           
-  boost::signals2::signal<void( std::string )> new_name;
-  boost::signals2::signal<void( uint32_t    )> new_length_ms;
+  boost::signals2::signal<void( uint32_t    )> sigPosition;
+  boost::signals2::signal<void( double      )> sigPercent;
   
-  boost::signals2::signal<float(uint32_t)> change_volume;
+  boost::signals2::signal<void(             )> sigEntered;
+  boost::signals2::signal<void( bool        )> sigPlaying;
+  boost::signals2::signal<void( bool        )> sigPaused;
+  boost::signals2::signal<void(             )> sigExited;
+  
+  boost::signals2::signal<void( uint32_t    )> sigState;
+  boost::signals2::signal<void( bool        )> sigStarving;
+  
+  boost::signals2::signal<void( std::string )> sigName;
+  boost::signals2::signal<void( uint32_t    )> sigLengthMs;
+  
+  // Signals used to calculate values
+  boost::signals2::signal<float(uint32_t)> calculate_volume;
   
   Sound(System* sys, std::string u);
+  void GetStaticInfo();
   void Reset();
   void Update();
   ~Sound();
-  
-  void GetStaticInfo();
 
+public:
   /////////////////////////////////////////////////////////////////////////////
   ///                                                                          
-  ///   Getters and Setters                                                   
-  ///                                                                          
-  ///
-
+  ///   Getters                                                 
+  /// 
   std::string GetUrl() { return url; }
-  std::string GetName() {
-    if (opening) return url;
-    return name;
-  }
-
-  void SetStartPosition(uint32_t ms) { start = ms; }
-  void SetStopPosition(uint32_t ms) { stop = ms; }
+  std::string GetName() { return opening ? url : name; }
 
   std::string GetTag(std::string name, int i=0);
 
@@ -128,72 +118,72 @@ struct Sound {
   void GetPCMData();
   uint32_t MemoryUsed();
 
-  void SetPositionMs(long ms);
-  //void Skip(uint32_t to);
+public:
+  /////////////////////////////////////////////////////////////////////////////
+  ///                                                                          
+  ///   Setters                                                   
+  /// 
+  void SetStartPosition(uint32_t ms) { start = ms; }
+  void SetStopPosition(uint32_t ms) { stop = ms; }
   void SetDefaults(float v = -2, float pa = -2, float f = -2, int pr = -2);
   
-  void Play(bool fade = 0);
-  void Pause(bool fade = 0);
-  void Unpause(bool fade = 0);
-  void Stop(bool fade = 0);
-  void PlayStop(bool fade = 1);
-  void PlayPause(bool fade = 0);
+  void SetFadeOnEnter(uint32_t len);
+  void SetFadeOnExit(uint32_t len);
+  void SetFadeOnPlay(uint32_t len);
+  void SetFadeOnStop(uint32_t len);
+  void SetFadeOnPause(uint32_t len);
+  void SetFadeOnResume(uint32_t len);
   
-  bool fadeOnPause;
-  bool fadeOnPlay;
-  bool fadeOnStop;
+  void SetLoop(uint32_t begin, uint32_t end, int count = 1);
+
+public:
+  /////////////////////////////////////////////////////////////////////////////
+  ///                                                                          
+  ///   Controls                                                   
+  ///
+  void Play();
+  void Pause();
+  void Unpause();
+  void Stop();
+  void PlayStop();
+  void PlayPause();
+  void SkipTo(long ms);
   
 protected:
-  
+  /////////////////////////////////////////////////////////////////////////////
+  ///                                                                          
+  ///   Internal                                                   
+  ///
   void _Play(bool paused = 0);
   void _Pause(bool paused);
   void _Stop();
   void _SetVolume(double);
-  
   void _FadeStopCompleteCallback();
-
-public:
-  //void ScheduleEffect(uint32_t t, fun_type f);
-  //
-  ////template<typename _Callable>
-  ////void CallAt( _Callable& callable, uint32_t at);
-  //
-  //void ScheduleFade(double dv, uint32_t start, uint32_t len, std::string method);
-  void SetFadeOnEnter(uint32_t len);
-  void SetFadeOnExit(uint32_t len);
-  void SetFadeOnStop(uint32_t len);
-  void SetFadeOnPause(uint32_t len);
-  void SetFadeOnPlay(uint32_t len);
-
-  void SetLoop(uint32_t begin, uint32_t end, int count = 1);
-
-  void UnsetLoop();
-  
+  void _FadePauseCompleteCallback();
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 ///
-///   Sound Implementation
 ///
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+///
+///
+///         Sound Implementation
+///
+///
+/// 
+///
 ////////////////////////////////////////////////////////////////////////////////
   
 Sound::Sound(System* sys, std::string u) 
-  : system((System&)*sys),  // WARNING THIS IS BAD
-    fade_in(+1.0, 0, 2),
-    fade_out(-1.0, 0, 2),
-    fade_stop(-1.0, 0, 3000)
-    //volume_manager(dvolume),
-    //fade_on_enter(1000, +1.0, Fader::LinearFade),
-    //fade_on_play(1000, +1.0, Fader::LinearFade),
-    //fade_on_exit(1000, -1.0, Fader::LinearFade),
-    //fade_on_pause(1000, -1.0, Fader::LinearFade),
-    //fade_on_stop(1000, -1.0, Fader::LinearFade)
+  : system((System&)*sys),  // BAD PRACTICE, but because you can't pass references in python (afaik)
+    fade_on_enter(+1.0, 1000 /*, Fader::LinearFade*/),
+    fade_on_exit(-1.0, 1000 /*, Fader::LinearFade*/),
+    fade_to_stop(-1.0, 1000 /*, Fader::LinearFade*/),
+    fade_to_pause(-1.0, 1000 /*, Fader::LinearFade*/),
+    fade_on_resume(+1.0, 1000 /*, Fader::LinearFade*/)
 {
+  assert(sys != NULL);
   
   channel = NULL;
   url = u;
@@ -208,14 +198,12 @@ Sound::Sound(System* sys, std::string u)
   length_pcmbytes = 0;
   starving = false;
   disk_busy = 0;
-  fadeOnPause = true;
-  fadeOnPlay = true;
-  fadeOnStop = true;
   max_volume = 1.0;
   min_volume = 0;
   start = 0;
+  stop = ~(uint32_t)0;
   
-  Reset();
+  Reset(); // the initial connection below is necessary for nonblocking loading status
   system_update_connection = system.update.connect(boost::bind(&Sound::Update, this));
 }
 
@@ -243,64 +231,26 @@ void Sound::GetStaticInfo() {
   checked(sound->getName(buf, len), __LINE__);
   name = std::string(buf); // stops at null
   
-  new_name(name);
-  new_length_ms(length_ms);
+  sigName (name);
+  sigLengthMs (length_ms);
   
-  volume_manager.schedule(fade_in);
-  fade_out.start = length_ms-fade_out.length-1;
-  volume_manager.schedule(fade_out);
-  fade_stop.on_stop(boost::bind(&Sound::_FadeStopCompleteCallback, this));
+  if (length_ms < fade_on_enter.length+fade_on_exit.length) {
+    double ratio = (1.0*fade_on_enter.length)/fade_on_exit.length;
+    fade_on_enter.length = ratio*(length_ms/2);
+    fade_on_exit.length = (length_ms/2)/ratio;
+  }
+  fade_on_enter.start = 0;
+  volume_manager.schedule(fade_on_enter);
+  fade_on_exit.start = length_ms-fade_on_exit.length-1;
+  volume_manager.schedule(fade_on_exit);
+  fade_to_stop.on_stop(boost::bind(&Sound::_FadeStopCompleteCallback, this));
+  fade_to_pause.on_stop(boost::bind(&Sound::_FadePauseCompleteCallback, this));
   
   uint32_t min = (length_ms/1000)/60;
   uint32_t sec = (length_ms/1000)%60;
   uint32_t dec = length_ms%1000;
-  printf("Finished loading: \"%s\" : %02d:%02d.%03d\n", name.c_str(), min, sec, dec);
-  
-  //fade_on_exit.stop_at(length_ms);
-  //fade_on_enter.start_at(start);
-  //fade_on_stop.on_stop(boost::bind(&Sound::_Stop, this));
-  //fade_on_pause.on_stop(boost::bind(&Sound::_Pause, this, true));
-  //fade_on_exit.enabled(false);
-  //fade_on_enter.enabled(false);
-  //fade_on_play.enabled(false);
-  //fade_on_stop.enabled(false);
-  //fade_on_pause.enabled(false);
+  printf("Finished loading: \"%s\" - %02d:%02d.%03d\n", name.c_str(), min, sec, dec);
 }
-
-void Sound::_FadeStopCompleteCallback() {
-  volume_manager.bypass(false);
-  Stop(false);
-}
-
-//void Sound::SetFadeOnEnter(uint32_t len) {
-//  fade_on_enter.length = len;
-//  if (!len) fade_on_enter.enabled(false);
-//  else fade_on_enter.enabled(true);
-//}
-//
-//void Sound::SetFadeOnPlay(uint32_t len) {
-//  fade_on_play.length = len;
-//  if (!len) fade_on_play.enabled(false);
-//  else fade_on_play.enabled(true);
-//}
-//
-//void Sound::SetFadeOnPause(uint32_t len) {
-//  fade_on_pause.length = len;
-//  if (!len) fade_on_pause.enabled(false);
-//  else fade_on_pause.enabled(true);
-//}
-//
-//void Sound::SetFadeOnExit(uint32_t len) {
-//  fade_on_exit.length = len;
-//  if (!len) fade_on_exit.enabled(false);
-//  else fade_on_exit.enabled(true);
-//}
-//
-//void Sound::SetFadeOnStop(uint32_t len) {
-//  fade_on_stop.length = len;
-//  if (!len) fade_on_stop.enabled(false);
-//  else fade_on_stop.enabled(true);
-//}
   
 void Sound::Reset() {
   playing = false;
@@ -317,23 +267,17 @@ Sound::~Sound() {
 
 /////////////////////////////////////////////////////////////////////////////
 ///                                                                          
-///   Protected                                                   
-///                                                                          
+///   Internal Protected                                                   
 ///
-
 void Sound::_Play(bool pause) {
   if (!opening) {
     assert(system != NULL);
     checked(system->playSound(FMOD_CHANNEL_FREE, sound, pause, &channel), __LINE__);
     if (!system_update_connection.connected())
       system_update_connection = system.update.connect(boost::bind(&Sound::Update, this));
-    if (start != 0) SetPositionMs(start);
-    //if (fade_on_play.enabled()) {
-    volume = 0.0;
-    _SetVolume(0.0);
-    //} else {
-    //  _SetVolume(max_volume);
-    //}
+    if (start != 0) SkipTo(start);
+    //volume = min_volume;
+    _SetVolume(min_volume);
     if (!pause) { _Pause(false); }
   }
 }
@@ -354,12 +298,22 @@ void Sound::_SetVolume(double v) {
   }
 }
 
+void Sound::_FadeStopCompleteCallback() {
+  volume_manager.bypass(false);
+  volume_manager.clear_slots();
+  _Stop();
+}
+
+void Sound::_FadePauseCompleteCallback() {
+  volume_manager.bypass(false);
+  volume_manager.clear_slots();
+  _Pause(true);
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
 ///                                                                          
-///   Multiline Getters and Setters                                                   
-///                                                                          
+///   Getters                                                   
 ///
 std::string Sound::GetTag(std::string name, int i) {
   std::vector<FMOD_TAG> &matches = tags[name];
@@ -368,81 +322,10 @@ std::string Sound::GetTag(std::string name, int i) {
   return std::string((char*)matches[i].data, matches[i].datalen);
 }
 
-void Sound::SetPositionMs(long ms) {
-  if (ms < 0) ms = 0;
-  if (ms > length_ms-1) ms = length_ms-1;
-  lazy_check(channel->setPosition((uint32_t)ms, FMOD_TIMEUNIT_MS), __LINE__);
-}
-
 uint32_t Sound::MemoryUsed() {
   uint32_t bits;
   checked(sound->getMemoryInfo(FMOD_MEMBITS_ALL, FMOD_EVENT_MEMBITS_ALL, &bits, 0), __LINE__);
   return bits/8 + (bits%8 != 0);
-}
-
-void Sound::PlayStop(bool fade) {
-  if (playing) {
-    Stop(fade);
-  } else {
-    if (paused) Unpause(fade);
-    else Play(fade);
-  }
-}
-
-void Sound::PlayPause(bool fade) {
-  if (playing && paused) Unpause();
-  else if (!playing) Play(fade);
-  else Pause(fade);
-}
-
-void Sound::Play(bool fade) {
-  if (!playing) {
-    if (fade) {
-      //fade_on_play.enabled(true);
-      //fade_on_play.start_at(position+1);
-    }
-    _Play(false);
-  }
-}
-void Sound::Pause(bool fade) {
-  if (!paused) {
-    //if (fade) {
-    //  //fade_on_pause.enabled(true);
-    //  //fade_on_pause.start_at(position);
-    //} else {
-      _Pause(true);
-    //}
-  }
-}
-void Sound::Unpause(bool fade) {
-  if (paused) {
-    if (fade) {
-      //fade_on_play.enabled(true);
-      //fade_on_play.start_at(position);
-    }
-    _Pause(false);
-  }
-}
-void Sound::Stop(bool fade) {
-  if (playing) {
-    if (fade) {
-      fade_stop.start = position;
-      fade_stop.last_t = fade_stop.start-1;
-      volume_manager.bypass(true);
-      volume_manager.clear_slots();
-      volume_manager.once(fade_stop);
-    } else {
-      _Stop();
-    }
-  }
-}
-
-void Sound::SetDefaults(float v, float pa, float f, int pr) {
-  if (f > 0) defaults.frequency = f;
-  if (v >= 0.0 && v <= 1.0) defaults.volume = v;
-  if (pa >= -1.0 && pa <= 1.0) defaults.pan = pa;
-  if (pr >= 0 && pr <= 255 ) defaults.priority = pr; // TODO fix arbitrary negative limit
-  sound->setDefaults(defaults.frequency, defaults.volume, defaults.pan, defaults.priority);
 }
 
 void Sound::GetPCMData() {
@@ -457,15 +340,110 @@ void Sound::GetPCMData() {
   std::cout << len1 << " " << len2 << "fmt:" << bits << std::endl;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+///                                                                          
+///   Setters                                                   
+///
+void Sound::SetFadeOnEnter(uint32_t len) {
+  fade_on_enter.length = len;
+}
+
+void Sound::SetFadeOnExit(uint32_t len) {
+  fade_on_exit.length = len;
+}
+
+void Sound::SetFadeOnPause(uint32_t len) {
+  fade_to_pause.length = len;
+}
+
+void Sound::SetFadeOnResume(uint32_t len) {
+  fade_on_resume.length = len;
+}
+
+void Sound::SetFadeOnPlay(uint32_t len) {
+  fade_on_resume.length = len;
+}
+
+void Sound::SetFadeOnStop(uint32_t len) {
+  fade_to_stop.length = len;
+}
+
+void Sound::SetDefaults(float v, float pa, float f, int pr) {
+  if (f > 0) defaults.frequency = f;
+  if (v >= 0.0 && v <= 1.0) defaults.volume = v;
+  if (pa >= -1.0 && pa <= 1.0) defaults.pan = pa;
+  if (pr >= 0 && pr <= 255 ) defaults.priority = pr; // TODO fix arbitrary negative limit
+  sound->setDefaults(defaults.frequency, defaults.volume, defaults.pan, defaults.priority);
+}
+
 void Sound::SetLoop(uint32_t begin, uint32_t end, int count) {
-  checked(sound->setLoopPoints(begin, FMOD_TIMEUNIT_MS, end, FMOD_TIMEUNIT_MS), __LINE__);
+  if (count > 0)
+    checked(sound->setLoopPoints(begin, FMOD_TIMEUNIT_MS, end, FMOD_TIMEUNIT_MS), __LINE__);
   checked(sound->setLoopCount(count), __LINE__);
 }
 
-void Sound::UnsetLoop() {
-  checked(sound->setLoopCount(0), __LINE__);
+
+///////////////////////////////////////////////////////////////////////////////
+///
+///   Controls
+///
+void Sound::SkipTo(long ms) {
+  if (ms < 0) ms = 0;
+  if (ms > length_ms-1) ms = length_ms-1;
+  lazy_check(channel->setPosition((uint32_t)ms, FMOD_TIMEUNIT_MS), __LINE__);
 }
 
+void Sound::PlayStop() {
+  if (playing) {
+    Stop();
+  } else {
+    if (paused) Unpause();
+    else Play();
+  }
+}
+
+void Sound::PlayPause() {
+  if (playing && paused) Unpause();
+  else if (!playing) Play();
+  else Pause();
+}
+
+void Sound::Play() {
+  if (!playing) {
+    _Play(false);
+  }
+}
+void Sound::Pause() {
+  if (!paused) {
+    fade_to_pause.start = position;
+    fade_to_pause.last_t = fade_to_pause.start-1;
+    volume_manager.bypass(true);
+    volume_manager.clear_slots();
+    volume_manager.once(fade_to_pause);
+  }
+}
+void Sound::Unpause() {
+  if (paused) {
+    fade_on_resume.start = position;
+    fade_on_resume.last_t = fade_on_resume.start-1;
+    volume_manager.once(fade_on_resume);
+    _Pause(false);
+  }
+}
+void Sound::Stop() {
+  if (playing) {
+    fade_to_stop.start = position;
+    fade_to_stop.last_t = fade_to_stop.start-1;
+    volume_manager.bypass(true);
+    volume_manager.clear_slots();
+    volume_manager.once(fade_to_stop);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///
+///   Update Function
+///
 void Sound::Update() {
   // TODO: Define behavior when position is changed or song is paused during a fade.
   uint32_t pos = position;
@@ -487,11 +465,11 @@ void Sound::Update() {
       GetStaticInfo();
     }
     
-    now_in_state(open_state);
+    sigState(open_state);
   }
   if (starv != starving) {
     starving = starv;
-    now_starving(starving);
+    sigStarving(starving);
   }
   
   
@@ -502,52 +480,67 @@ void Sound::Update() {
     lazy_check(channel->isPlaying(&isplaying), __LINE__);
     lazy_check(channel->getPaused(&ispaused), __LINE__);
     // TODO: undefined behavior ^ when channel becomes NULL in the middle of them?
+    int64_t ellapsed = (int64_t)pos - (int64_t)position;
+    std::cout << "t: " << pos << " ellapsed: " << ellapsed << std::endl;
     
-    std::cout << "volume: " << volume << std::endl;
-    double dv = volume_manager(pos);
-    //std::cout << "dv: " << dv << std::endl;
-    volume = vol;
-    _SetVolume(volume + dv);
-    
-    uint32_t ellapsed = pos - position;
     if (pos != position) {
-      // check for new effects to add
       position = pos;
-      now_at_position(position);
-      
+      sigPosition(position);
       percent = 100.0*position/length_ms;
       if (percent == percent) {
-        now_at_percent(percent);
+        sigPercent(percent);
       }
     }
     if (!isplaying && playing) {
       system_update_connection.disconnect();
       playing = isplaying;
-      now_stopped();
+      sigPlaying(false);
+      std::cout << "stopped" << std::endl;
     } else if (isplaying && !playing) {  
       playing = isplaying;
-      now_playing();
+      sigPlaying(true);
+      std::cout << "playing" << std::endl;
     }
     
     if (!ispaused && paused) {
     paused = ispaused;
-      now_unpaused();
+      sigPaused(false);
+      std::cout << "unpaused" << std::endl;
     } else if (ispaused && !paused) {    
       paused = ispaused;
-      now_paused();
-    }
-    if (position >= stop) { 
-      Stop();
-      now_finished();
+      sigPaused(true);
+      std::cout << "paused" << std::endl;
     }
     
+    // Volume
+    std::cout << "Volume: " << volume << std::endl;
+    double dv = 0;
+    if (isplaying)
+      dv = volume_manager(pos);
+    if (!isplaying) {
+      volume_manager.reset();
+    }
+    //std::cout << "dv: " << dv << std::endl;
+    volume = vol;
+    _SetVolume(volume + dv);
+    
   } else if (!opening) {
+    std::cout << "channel == null" << std::endl;
     paused = 0;
     playing = 0;
     position = 0;
     percent = 0;
+    sigExited();
+    std::cout << "finished" << std::endl;
     system_update_connection.disconnect();
     return;
+  }
+  
+  if (position == 0 || position >= stop) {
+    if (position != 0)
+      Stop();
+    //sigExited();
+    //std::cout << "finished" << std::endl;
   }
 }
 

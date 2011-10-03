@@ -99,12 +99,12 @@ Rectangle {
           SequentialAnimation {
             id:load_animation
             PropertyAnimation { target: progress; property: "opacity"; to: 0.2; easing.type: Easing.Linear; duration: 500 }
-            SequentialAnimation {
-              id:inner_loop
-              loops: Animation.Infinite
-              PropertyAnimation{ target: progress; property: "opacity";  from: 0.2; to: 0.3; easing.type: Easing.Linear; duration: 500}
-              PropertyAnimation{ target: progress; property: "opacity";  from: 0.3; to: 0.2; easing.type: Easing.Linear; duration: 500}
-            }
+            //SequentialAnimation {
+            //  id:inner_loop
+            //  loops: Animation.Infinite
+            //  PropertyAnimation{ target: progress; property: "opacity";  from: 0.2; to: 0.3; easing.type: Easing.Linear; duration: 500}
+            //  PropertyAnimation{ target: progress; property: "opacity";  from: 0.3; to: 0.2; easing.type: Easing.Linear; duration: 500}
+            //}
           }
          
           transitions: [
@@ -212,9 +212,9 @@ Rectangle {
       function getProgress() { return progress.percent; }
       function setText(t) { text = t; }
       function getText() { return text; }
-      function nowStopped() {
-        console.log("now stopped")
-        progress.state = "stopped"
+      function nowPlaying(b) {
+        if (b) progress.state = "";
+        else progress.state = "stopped";
       }
       function setState(s) {
         //READY: 0

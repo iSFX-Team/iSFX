@@ -20,7 +20,10 @@ struct Sound {
     PyObject* starvingCallback;
     PyObject* newNameCallback;
     PyObject* newLengthMsCallback;
-    PyObject* nowStoppedCallback;
+    PyObject* enteredCallback;
+    PyObject* playingCallback;
+    PyObject* pausedCallback;
+    PyObject* exitedCallback;
     void pySocket_AtPosition(long i) {
       if (atPositionCallback != NULL) {
         PyObject *arglist = Py_BuildValue("(i)", i);
@@ -57,10 +60,28 @@ struct Sound {
         PyObject_CallObject(newNameCallback, arglist);
       }
     }
-    void pySocket_NowStopped() {
-      if (nowStoppedCallback != NULL) {
+    void pySocket_Entered(void) {
+      if (enteredCallback != NULL) {
         PyObject *arglist = Py_BuildValue("");
-        PyObject_CallObject(nowStoppedCallback, arglist);
+        PyObject_CallObject(enteredCallback, arglist);
+      }
+    }
+    void pySocket_Playing(bool b) {
+      if (playingCallback != NULL) {
+        PyObject *arglist = Py_BuildValue("(?)", b);
+        PyObject_CallObject(playingCallback, arglist);
+      }
+    }
+    void pySocket_Paused(bool b) {
+      if (pausedCallback != NULL) {
+        PyObject *arglist = Py_BuildValue("(?)", b);
+        PyObject_CallObject(pausedCallback, arglist);
+      }
+    }
+    void pySocket_Exited(void) {
+      if (exitedCallback != NULL) {
+        PyObject *arglist = Py_BuildValue("");
+        PyObject_CallObject(exitedCallback, arglist);
       }
     }
 };
@@ -95,13 +116,18 @@ Sound_init(Sound *self, PyObject *args, PyObject *kwds)
   if (!PyArg_ParseTuple(args, "Os", &system, &sound_path))
       return NULL;
   self->_sound = new iSFX::Sound(system->_system, sound_path);
-  self->_sound->now_at_position.connect(boost::bind(&Sound::pySocket_AtPosition, self, _1));
-  self->_sound->now_at_percent.connect(boost::bind(&Sound::pySocket_AtPercent, self, _1));
-  self->_sound->new_length_ms.connect(boost::bind(&Sound::pySocket_NewLengthMs, self, _1));
-  self->_sound->new_name.connect(boost::bind(&Sound::pySocket_NewName, self, _1));
-  self->_sound->now_in_state.connect(boost::bind(&Sound::pySocket_InState, self, _1));
-  self->_sound->now_starving.connect(boost::bind(&Sound::pySocket_Starving, self, _1));
-  self->_sound->now_stopped.connect(boost::bind(&Sound::pySocket_NowStopped, self));
+  self->_sound->sigPosition.connect(boost::bind(&Sound::pySocket_AtPosition, self, _1));
+  self->_sound->sigPercent.connect(boost::bind(&Sound::pySocket_AtPercent, self, _1));
+  self->_sound->sigLengthMs.connect(boost::bind(&Sound::pySocket_NewLengthMs, self, _1));
+  self->_sound->sigName.connect(boost::bind(&Sound::pySocket_NewName, self, _1));
+  self->_sound->sigState.connect(boost::bind(&Sound::pySocket_InState, self, _1));
+  self->_sound->sigStarving.connect(boost::bind(&Sound::pySocket_Starving, self, _1));
+  
+  self->_sound->sigEntered.connect(boost::bind(&Sound::pySocket_Entered, self));
+  self->_sound->sigPlaying.connect(boost::bind(&Sound::pySocket_Playing, self, _1));
+  self->_sound->sigPaused.connect(boost::bind(&Sound::pySocket_Paused, self, _1));
+  self->_sound->sigExited.connect(boost::bind(&Sound::pySocket_Exited, self));
+  //self->_sound->sigStopped.connect(boost::bind(&Sound::pySocket_NowStopped, self));
 }
 
 
@@ -121,88 +147,72 @@ static PyObject * Sound_GetPCMData(Sound* self) { self->_sound->GetPCMData(); Py
 static PyObject * Sound_SetPositionMs(Sound* self, PyObject *args, PyObject *keywds) {
   long ms;
   if (!PyArg_ParseTuple(args, "l", &ms)) {
-    PyErr_SetString(PyExc_TypeError, "parameter parse failed line:"+ __LINE__);
+    PyErr_SetString(PyExc_TypeError, "parameter parse failed line: " + __LINE__);
     return NULL;
   }
-  self->_sound->SetPositionMs(ms);
+  self->_sound->SkipTo(ms);
   Py_RETURN_NONE;
 }
 
-//static PyObject * Sound_FadeOnStop(Sound* self, PyObject *args, PyObject *keywds) {
-//  long ms;
-//  if (!PyArg_ParseTuple(args, "l", &ms)) {
-//    PyErr_SetString(PyExc_TypeError, "parameter parse failed line:"+ __LINE__);
-//    return NULL;
-//  }
-//  self->_sound->SetFadeOnStop(ms);
-//  Py_RETURN_NONE;
-//}
-//
-//static PyObject * Sound_FadeOnPause(Sound* self, PyObject *args, PyObject *keywds) {
-//  long ms;
-//  if (!PyArg_ParseTuple(args, "l", &ms)) {
-//    PyErr_SetString(PyExc_TypeError, "parameter parse failed line:"+ __LINE__);
-//    return NULL;
-//  }
-//  self->_sound->SetFadeOnPause(ms);
-//  Py_RETURN_NONE;
-//}
-//
-//static PyObject * Sound_FadeOnEnter(Sound* self, PyObject *args, PyObject *keywds) {
-//  long ms;
-//  if (!PyArg_ParseTuple(args, "l", &ms)) {
-//    PyErr_SetString(PyExc_TypeError, "parameter parse failed line:"+ __LINE__);
-//    return NULL;
-//  }
-//  self->_sound->SetFadeOnEnter(ms);
-//  Py_RETURN_NONE;
-//}
-//
-//static PyObject * Sound_FadeOnExit(Sound* self, PyObject *args, PyObject *keywds) {
-//  long ms;
-//  if (!PyArg_ParseTuple(args, "l", &ms)) {
-//    PyErr_SetString(PyExc_TypeError, "parameter parse failed line:"+ __LINE__);
-//    return NULL;
-//  }
-//  self->_sound->SetFadeOnExit(ms);
-//  Py_RETURN_NONE;
-//}
-//
-//static PyObject * Sound_FadeOnPlay(Sound* self, PyObject *args, PyObject *keywds) {
-//  long ms;
-//  if (!PyArg_ParseTuple(args, "l", &ms)) {
-//    PyErr_SetString(PyExc_TypeError, "parameter parse failed line:"+ __LINE__);
-//    return NULL;
-//  }
-//  self->_sound->SetFadeOnPlay(ms);
-//  Py_RETURN_NONE;
-//}
+static PyObject * Sound_FadeOnStop(Sound* self, PyObject *args, PyObject *keywds) {
+  long ms;
+  if (!PyArg_ParseTuple(args, "l", &ms)) {
+    PyErr_SetString(PyExc_TypeError, "parameter parse failed line: " + __LINE__);
+    return NULL;
+  }
+  self->_sound->SetFadeOnStop(ms);
+  Py_RETURN_NONE;
+}
 
-//static PyObject * Sound_Fade(Sound* self, PyObject *args, PyObject *keywds) {
-//  double dv;
-//  unsigned int dt;
-//  const char* method = NULL;
-//  static char *kwlist[] = {"dv", "dt", "method", "then", NULL};
-//  if (!PyArg_ParseTupleAndKeywords(args, keywds, "dI|ss", kwlist, 
-//                                       &dv, &dt, &method, &then))
-//    return NULL;
-//    
-//  unsigned int m = 0;
-//  unsigned int t = 0;
-//  if (method != NULL) {
-//    std::string s (method);
-//  }
-//  if (then != NULL) {
-//    std::string s (then);
-//    if (s == "stop") {
-//      t = 1;
-//    } else if (s == "pause") {
-//      t = 2;
-//    }
-//  }
-//  self->_sound->Fade(dv, dt, m, t);
-//  Py_RETURN_NONE;
-//}
+static PyObject * Sound_FadeOnResume(Sound* self, PyObject *args, PyObject *keywds) {
+  long ms;
+  if (!PyArg_ParseTuple(args, "l", &ms)) {
+    PyErr_SetString(PyExc_TypeError, "parameter parse failed line: " + __LINE__);
+    return NULL;
+  }
+  self->_sound->SetFadeOnResume(ms);
+  Py_RETURN_NONE;
+}
+
+static PyObject * Sound_FadeOnPause(Sound* self, PyObject *args, PyObject *keywds) {
+  long ms;
+  if (!PyArg_ParseTuple(args, "l", &ms)) {
+    PyErr_SetString(PyExc_TypeError, "parameter parse failed line: " + __LINE__);
+    return NULL;
+  }
+  self->_sound->SetFadeOnPause(ms);
+  Py_RETURN_NONE;
+}
+
+static PyObject * Sound_FadeOnEnter(Sound* self, PyObject *args, PyObject *keywds) {
+  long ms;
+  if (!PyArg_ParseTuple(args, "l", &ms)) {
+    PyErr_SetString(PyExc_TypeError, "parameter parse failed line: " + __LINE__);
+    return NULL;
+  }
+  self->_sound->SetFadeOnEnter(ms);
+  Py_RETURN_NONE;
+}
+
+static PyObject * Sound_FadeOnExit(Sound* self, PyObject *args, PyObject *keywds) {
+  long ms;
+  if (!PyArg_ParseTuple(args, "l", &ms)) {
+    PyErr_SetString(PyExc_TypeError, "parameter parse failed line: " + __LINE__);
+    return NULL;
+  }
+  self->_sound->SetFadeOnExit(ms);
+  Py_RETURN_NONE;
+}
+
+static PyObject * Sound_FadeOnPlay(Sound* self, PyObject *args, PyObject *keywds) {
+  long ms;
+  if (!PyArg_ParseTuple(args, "l", &ms)) {
+    PyErr_SetString(PyExc_TypeError, "parameter parse failed line: " + __LINE__);
+    return NULL;
+  }
+  self->_sound->SetFadeOnPlay(ms);
+  Py_RETURN_NONE;
+}
 
 static PyObject * Sound_SetPositionCallback(Sound* self, PyObject* args) {
   PyObject* fun;
@@ -306,7 +316,7 @@ static PyObject * Sound_SetNewNameCallback(Sound* self, PyObject* args) {
   Py_RETURN_NONE;
 }
 
-static PyObject * Sound_SetNowStoppedCallback(Sound* self, PyObject* args) {
+static PyObject * Sound_SetPlayingCallback(Sound* self, PyObject* args) {
   PyObject* fun;
   if (!PyArg_ParseTuple(args, "O", &fun)) {
     PyErr_SetString(PyExc_TypeError, "parameter parse failed.");
@@ -318,7 +328,7 @@ static PyObject * Sound_SetNowStoppedCallback(Sound* self, PyObject* args) {
   }
   
   Py_XINCREF(fun);         /* Add a reference to new callback */
-  self->nowStoppedCallback = fun;
+  self->playingCallback = fun;
   
   Py_RETURN_NONE;
 }
@@ -331,19 +341,21 @@ static PyMethodDef Sound_methods[] = {
     {"memoryUsed", (PyCFunction)Sound_MemoryUsed, METH_NOARGS, "Returns the number of bytes used by the sound." },
     {"playStop", (PyCFunction)Sound_PlayStop, METH_NOARGS, "Toggles play/stop" },
     {"playPause", (PyCFunction)Sound_PlayPause, METH_NOARGS, "Toggles play/pause" },
-    //{"fadeOnStop", (PyCFunction)Sound_FadeOnStop, METH_VARARGS, "Sets the fade-on-stop option." },
-    //{"fadeOnPause", (PyCFunction)Sound_FadeOnPause, METH_VARARGS, "Sets the fade-on-pause option." },
-    //{"fadeEntering", (PyCFunction)Sound_FadeOnEnter, METH_VARARGS, "Fade on sound begin." },
-    //{"fadeExiting", (PyCFunction)Sound_FadeOnExit, METH_VARARGS, "Fade on sound finish." },
-    //{"fadeExiting", (PyCFunction)Sound_FadeOnPlay, METH_VARARGS, "Fade on sound finish." },
-    //{"fade", (PyCFunction)Sound_FadeIn, METH_VARARGS, "Fade now." },
+    
+    {"fadeOnPlay", (PyCFunction)Sound_FadeOnPlay, METH_VARARGS, "Sets the fade-on-play option." },
+    {"fadeOnStop", (PyCFunction)Sound_FadeOnStop, METH_VARARGS, "Sets the fade-on-stop option." },
+    {"fadeOnPause", (PyCFunction)Sound_FadeOnPause, METH_VARARGS, "Sets the fade-on-pause option." },
+    {"fadeOnResume", (PyCFunction)Sound_FadeOnResume, METH_VARARGS, "Sets the fade-on-resume option." },
+    {"fadeEntering", (PyCFunction)Sound_FadeOnEnter, METH_VARARGS, "Fade on sound beginning." },
+    {"fadeExiting", (PyCFunction)Sound_FadeOnExit, METH_VARARGS, "Fade on sound finish." },
+    
     {"setPositionCallback", (PyCFunction)Sound_SetPositionCallback, METH_VARARGS, "Sets the change in position callback." },
     {"setPercentCallback", (PyCFunction)Sound_SetPercentCallback, METH_VARARGS, "Sets the change in position percentage callback." },
     {"setInStateCallback", (PyCFunction)Sound_SetInStateCallback, METH_VARARGS, "Sets the state change callback." },
     {"setStarvingCallback", (PyCFunction)Sound_SetStarvingCallback, METH_VARARGS, "Sets the starving callback." },
     {"setNewNameCallback", (PyCFunction)Sound_SetNewNameCallback, METH_VARARGS, "Sets new name callback." },
     {"setNewLengthMsCallback", (PyCFunction)Sound_SetNewLengthMsCallback, METH_VARARGS, "Sets new length callback." },
-    {"setNowStoppedCallback", (PyCFunction)Sound_SetNowStoppedCallback, METH_VARARGS, "Sets stopped callback." },
+    {"setPlayingCallback", (PyCFunction)Sound_SetPlayingCallback, METH_VARARGS, "Sets playing callback (0 if stopped)." },
     {"setPositionMs", (PyCFunction)Sound_SetPositionMs, METH_VARARGS, "Changes the current position (ms)." },
     {NULL}  /* Sentinel */
 };

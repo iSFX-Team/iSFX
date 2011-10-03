@@ -13,7 +13,7 @@ Rectangle {
     signal escapeSignal;
     Timer {
       id:updateTimer
-      interval: 10
+      interval: 12
       repeat: true
       onTriggered: {
         updateSignal();
