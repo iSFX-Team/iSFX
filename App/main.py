@@ -1,7 +1,14 @@
 import sys
 import os
-import random
 import string
+
+if sys.platform == 'darwin':
+  os.system("rm -f iSFX.so")
+  os.system("rm -f libfmodex.dylib")
+  os.system("ln -s ../Lib/Python/build/iSFX.so . &> /dev/null")
+  os.system("ln -s ../FMOD/lib/libfmodex.dylib . &> /dev/null")
+elif sys.platform == 'win64':
+  os.system("")
 import iSFX
 
 from PyQt4.QtCore import QDateTime, QObject, QUrl, pyqtSignal
@@ -23,8 +30,6 @@ view.setSource(QUrl('main.qml'))
 view.setResizeMode(QDeclarativeView.SizeRootObjectToView)
 
 rootObject = view.rootObject()
-#rootObject.updateSignal.connect(Update)
-#sound.setPositionCallback(rootObject.updateProgress)
 rootObject.updateSignal.connect(system.Update)
 rootObject.escapeSignal.connect(StopAll)
 
@@ -58,7 +63,6 @@ for f in files:
   s = iSFX.Sound(system, os.path.join(path, f))
   print(os.path.join(path, f))
   s.setPercentCallback(e.setProgress)
-  #s.setNewLengthCallback(e.setProgress)
   s.setNewNameCallback(e.setName)
   s.setInStateCallback(e.setState)
   s.setPlayingCallback(e.nowPlaying)
@@ -66,14 +70,5 @@ for f in files:
   e.setText(s.getName())
   songs.append(s)
   i+=1
-  
-#rootObject.setFocusList1();
-  
-#l2 = rootObject.getListContents2()
-#for i in l2:
-#  i.clicked.connect(Print)
-  
-#l1[0].setProperty("text", "Hello World 0")  
-#l2[10].setProperty("text", "Hello World 10")
 
 app.exec_()
