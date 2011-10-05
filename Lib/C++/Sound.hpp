@@ -14,6 +14,9 @@
 #include "Effects.hpp"
 //#include "Actions.hpp"
 
+using boost::uint32_t;
+using boost::int64_t;
+
 namespace iSFX {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -177,11 +180,11 @@ protected:
   
 Sound::Sound(System* sys, std::string u) 
   : system((System&)*sys),  // BAD PRACTICE, but because you can't pass references in python (afaik)
-    fade_on_enter(+1.0, 1000 /*, Fader::LinearFade*/),
-    fade_on_exit(-1.0, 1000 /*, Fader::LinearFade*/),
+    fade_on_enter(+1.0, 1 /*, Fader::LinearFade*/),
+    fade_on_exit(-1.0, 1 /*, Fader::LinearFade*/),
     fade_to_stop(-1.0, 1000 /*, Fader::LinearFade*/),
-    fade_to_pause(-1.0, 1000 /*, Fader::LinearFade*/),
-    fade_on_resume(+1.0, 1000 /*, Fader::LinearFade*/)
+    fade_to_pause(-1.0, 1 /*, Fader::LinearFade*/),
+    fade_on_resume(+1.0, 1 /*, Fader::LinearFade*/)
 {
   assert(sys != NULL);
   
