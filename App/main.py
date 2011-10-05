@@ -62,6 +62,7 @@ for f in files:
   e = l[r]
   s = iSFX.Sound(system, os.path.join(path, f))
   print(os.path.join(path, f))
+  s.fadeEntering(10000)
   s.setPercentCallback(e.setProgress)
   s.setNewNameCallback(e.setName)
   s.setInStateCallback(e.setState)
