@@ -12,7 +12,6 @@ Structure:
     /LICENSE.TXT                -- FMOD License
   /App                          -- A Soundboard application
   /Lib                          -- A library extending FMOD's capabilities
-    /C                          -- Lib iSFX C
     /C++                        -- Lib iSFX C++
     /Python                     -- Lib iSFX Python
   /test                         -- test code / useful snippets
