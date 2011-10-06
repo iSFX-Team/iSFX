@@ -417,7 +417,7 @@ void Sound::Play() {
   }
 }
 void Sound::Pause() {
-  if (!paused) {
+  if (!paused && !fade_to_pause.is_connected()) {
     fade_to_pause.start = position;
     fade_to_pause.last_t = fade_to_pause.start-1;
     volume_manager.bypass(true);
@@ -426,7 +426,7 @@ void Sound::Pause() {
   }
 }
 void Sound::Unpause() {
-  if (paused) {
+  if (paused && !fade_on_resume.is_connected()) {
     fade_on_resume.start = position;
     fade_on_resume.last_t = fade_on_resume.start-1;
     volume_manager.once(fade_on_resume);
@@ -434,7 +434,7 @@ void Sound::Unpause() {
   }
 }
 void Sound::Stop() {
-  if (playing) {
+  if (playing && !fade_to_stop.is_connected()) {
     fade_to_stop.start = position;
     fade_to_stop.last_t = fade_to_stop.start-1;
     volume_manager.bypass(true);

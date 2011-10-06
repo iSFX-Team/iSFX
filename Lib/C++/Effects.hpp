@@ -68,6 +68,9 @@ struct Fader : public Effect {
     ss << " }";
     return ss.str();
   }
+  bool is_connected() {
+    return connection.connected();
+  }
 };
 
 // combiner which returns the maximum value returned by all slots
