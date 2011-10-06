@@ -167,7 +167,7 @@ Rectangle {
         //onClicked: { rect.clicked(index, mouse); }
         onClicked: {
           var p = mapToItem(hotkey_button, mouse.x, mouse.y);
-          if (p.x > 0 && p.y > 0 && p.x < hotkey_button.width && p.y < hotkey_button.height) {
+          if (p.x > 0 && p.y > 0 && p.x < rect.width && p.y < hotkey_button.height) {
             hotkey_button.clicked(mouse);
           } else {
             rect.clicked(index, mouse);

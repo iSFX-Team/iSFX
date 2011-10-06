@@ -35,28 +35,30 @@ Rectangle {
           columnFocus = event.key-16777264;
           return;
         }
-        var c = String.fromCharCode(event.key).toLowerCase();
-        if (qwertyToIndex(c) >= 0) {
-          var o;
-          if (columnFocus == 0) {
-            o = list1.getListContents()[asciiToIndex(c)];
-          } else if (columnFocus == 1) {
-            o = list2.getListContents()[asciiToIndex(c)];
-          } else if (columnFocus == 2) {
-            o = list3.getListContents()[asciiToIndex(c)];
-          } else if (columnFocus == 3) {
-            o = list4.getListContents()[asciiToIndex(c)];
-          }// else if (columnFocus == 4) {
-          //  o = list5.getListContents()[asciiToIndex(c)];
-          //} else if (columnFocus == 5) {
-          //  o = list6.getListContents()[asciiToIndex(c)];
-          //} else if (columnFocus == 6) {
-          //  o = list7.getListContents()[asciiToIndex(c)];
-          //} else if (columnFocus == 7) {
-          //  o = list8.getListContents()[asciiToIndex(c)];
-          //}
-          if (o !== null && o !== undefined) {
-            o.buttonSignal("hotkey");
+        if (event.key <= 255) {
+          var c = String.fromCharCode(event.key).toLowerCase();
+          if (qwertyToIndex(c) >= 0) {
+            var o;
+            if (columnFocus == 0) {
+              o = list1.getListContents()[asciiToIndex(c)];
+            } else if (columnFocus == 1) {
+              o = list2.getListContents()[asciiToIndex(c)];
+            } else if (columnFocus == 2) {
+              o = list3.getListContents()[asciiToIndex(c)];
+            } else if (columnFocus == 3) {
+              o = list4.getListContents()[asciiToIndex(c)];
+            }// else if (columnFocus == 4) {
+            //  o = list5.getListContents()[asciiToIndex(c)];
+            //} else if (columnFocus == 5) {
+            //  o = list6.getListContents()[asciiToIndex(c)];
+            //} else if (columnFocus == 6) {
+            //  o = list7.getListContents()[asciiToIndex(c)];
+            //} else if (columnFocus == 7) {
+            //  o = list8.getListContents()[asciiToIndex(c)];
+            //}
+            if (o !== null && o !== undefined) {
+              o.buttonSignal("hotkey");
+            }
           }
         }
       }
