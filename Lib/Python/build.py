@@ -11,4 +11,19 @@ if platform == 'darwin' or platform == 'linux':
   else: print ("Build unsuccessful.")
 
 if platform[0:3] == 'win':
-  os.system("setup.py build")
+  os.system("del /q /f .\\build\\lib.win-amd64-3.2 >nul 2>nul")
+  os.system("del /q /f .\\build\\temp.win-amd64-3.2 >nul 2>nul")
+  os.system("COPY /B pyiSFX.cpp +,,")
+  if os.system(".\\setup.py build") == 0:
+    os.system("move /y .\\build\\lib.win-amd64-3.2\\iSFX.pyd .\\build\\ >nul 2>nul")
+    os.system("del /q /f .\\build\\lib.win-amd64-3.2\\* >nul 2>nul")
+    os.system("rmdir /q .\\build\\lib.win-amd64-3.2 >nul 2>nul")
+    os.system("del /q /f .\\build\\temp.win-amd64-3.2\\Release\\* >nul 2>nul")
+    os.system("rmdir /q .\\build\\temp.win-amd64-3.2\\Release >nul 2>nul")
+    os.system("del /q /f .\\build\\temp.win-amd64-3.2\\* >nul 2>nul")
+    os.system("rmdir /q .\\build\\temp.win-amd64-3.2 >nul 2>nul")
+  else: print ("Build unsucessful.")
+
+else:
+  print("Build script cannot handle your platform.")
+  print("Please add your platform to the build script.")
