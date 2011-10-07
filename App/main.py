@@ -8,8 +8,17 @@ if sys.platform == 'darwin':
   os.system("ln -s ../Lib/Python/build/iSFX.so . &> /dev/null")
   os.system("ln -s ../FMOD/lib/libfmodex.dylib . &> /dev/null")
 elif sys.platform == 'win64':
-  os.system("")
-import iSFX
+  os.system("del /q /f iSFX64.pyc >nul 2>nul")
+  os.system("del /q /f fmodex64.dll >nul 2>nul")
+  os.system("mklink fmodex64.dll ../FMOD/lib/fmodex64.dll >nul 2>nul")
+  os.system("mklink iSFX64.pyc ../Lib/Python/build/iSFX64.pyc >nul 2>nul")
+else:
+  print("Add support for your platform " + sys.platform + " in main.py."
+
+if sys.platform == 'win64':
+  import iSFX64 as iSFX
+else:
+  import iSFX
 
 from PyQt4.QtCore import QDateTime, QObject, QUrl, pyqtSignal
 from PyQt4.QtGui import QApplication
