@@ -46,14 +46,14 @@ struct Fader : public Effect {
     }
     if (t < prev_t) {
       last_t = -1;
-      std::cout << toString() << " t: " << t << " prev_t: " << prev_t << std::endl;
+      //std::cout << toString() << " t: " << t << " prev_t: " << prev_t << std::endl;
       return -change/length*std::min<int64_t>(std::abs((long)prev_t-(long)t), prev_t-start+1);
     } else if (t > prev_t) {
       if (t > start+length) t = start+length;
       if (prev_t < start) prev_t = start;
-      std::cout << toString() << " t: " << t << " prev_t: " << prev_t << std::endl;
-      std::cout << toString() << " " << t-prev_t << std::endl;
-      std::cout << toString() << " " << t-start << std::endl;
+      //std::cout << toString() << " t: " << t << " prev_t: " << prev_t << std::endl;
+      //std::cout << toString() << " " << t-prev_t << std::endl;
+      //std::cout << toString() << " " << t-start << std::endl;
       return change/length*std::min<int64_t>(t-prev_t, t-start);
     }
   }

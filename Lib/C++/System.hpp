@@ -15,16 +15,16 @@ namespace iSFX {
     FMOD::System *system;
     FMOD_RESULT result;
     
-    boost::signals2::signal<void()> update;
+    boost::signals2::signal<void()> updateSignal;
     
     System() {
       checked(FMOD::System_Create(&system), __LINE__);
       checked(system->init(32, FMOD_INIT_NORMAL | FMOD_HARDWARE, NULL), __LINE__);
     }
     
-    void Update() {
+    void update() {
       system->update();
-      update();
+      updateSignal();
     }
     
     operator FMOD::System* () {

@@ -1,6 +1,7 @@
 #ifndef __iSFX__Error_hpp__
 #define __iSFX__Error_hpp__
 #include "fmod_errors.h"
+#include <stdio.h>
 
 namespace iSFX {
 

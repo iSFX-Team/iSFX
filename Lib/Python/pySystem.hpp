@@ -45,7 +45,7 @@ System_init(System *self, PyObject *args, PyObject *kwds)
 static PyObject*
 System_Update(System *self)
 {
-  self->_system->Update();
+  self->_system->update();
   Py_RETURN_NONE;
 }
 

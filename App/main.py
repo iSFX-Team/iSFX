@@ -1,84 +1,65 @@
-import sys
 import os
-import string
+import sys
+
+from PyQt4 import QtCore, QtGui, QtDeclarative
+from PyQt4.QtGui import QApplication, QCursor
+from PyQt4.QtDeclarative import QDeclarativeView
+from xml.etree.ElementTree import *
+
+from SoundData import SoundData
+from SoundBoard import SoundBoard
 
 if sys.platform == 'darwin':
   os.system("rm -f iSFX.so")
   os.system("rm -f libfmodex.dylib")
   os.system("ln -s ../Lib/Python/build/iSFX.so . &> /dev/null")
   os.system("ln -s ../FMOD/lib/libfmodex.dylib . &> /dev/null")
-elif sys.platform == 'win64':
-  os.system("del /q /f iSFX64.pyc >nul 2>nul")
-  os.system("del /q /f fmodex64.dll >nul 2>nul")
-  os.system("mklink fmodex64.dll ../FMOD/lib/fmodex64.dll >nul 2>nul")
-  os.system("mklink iSFX64.pyc ../Lib/Python/build/iSFX64.pyc >nul 2>nul")
+elif sys.platform[0:3] == 'win':
+  os.system("copy /y ..\\FMOD\\lib\\fmodex64.dll .\\fmodex64.dll >nul 2>nul")
+  #if os.path.exists(os.path.join(os.pardir, "Lib", "Python", "build", "iSFX.pyd")):
+  os.system("copy /y  ..\\Lib\\Python\\build\\iSFX.pyd .\\iSFX.pyd >nul 2>nul")
 else:
-  print("Add support for your platform " + sys.platform + " in main.py."
+  print("Add support for your platform " + sys.platform + " in main.py.")
 
 if sys.platform == 'win64':
-  import iSFX64 as iSFX
+  import iSFX64 as iSFX # i don't think this ever exists
 else:
   import iSFX
+    
+def setCursor(e, s):
+  if (s == "pointing hand"):
+    e.setCursor(QCursor(Qt.PointingHandCursor))
+  elif (s == "grabbing hand"):
+    e.setCursor(QCursor(Qt.ClosedHandCursor))
+  elif (s == "open hand"):
+    e.setCursor(QCursor(Qt.OpenHandCursor))
+  elif (s == "normal"):
+    e.setCursor(QCursor(Qt.ArrowCursor))
+  else:
+    print(s)
 
-from PyQt4.QtCore import QDateTime, QObject, QUrl, pyqtSignal
-from PyQt4.QtGui import QApplication
-from PyQt4.QtDeclarative import QDeclarativeView
+if __name__ == '__main__':
+    
+    app = QtGui.QApplication(sys.argv)
+    canvas = QtDeclarative.QDeclarativeView()
+    engine = canvas.engine()
+    
+    system = iSFX.System()
+    soundboard = SoundBoard(system, "../../sounds", "sounds.xml")
 
-system = iSFX.System();
+    engine.rootContext().setContextObject(soundboard)
+    canvas.setSource(QtCore.QUrl.fromLocalFile('qml/main.qml'))
+    canvas.setResizeMode(QDeclarativeView.SizeRootObjectToView)
+    engine.quit.connect(app.quit)
+    
+    rootObject = canvas.rootObject()
+    rootObject.updateSignal.connect(system.Update)
+    rootObject.setCursorSignal.connect(setCursor)
+    
+    canvas.setGeometry(QtCore.QRect(0, 0, rootObject.property("width"), rootObject.property("height")))
+    canvas.setWindowTitle("iSFX")
+    canvas.show()
+    canvas.raise_()
 
-songs = []
-def StopAll():
-  for s in songs:
-    s.stop();
-
-app = QApplication(sys.argv)
-
-# Create the QML user interface.
-view = QDeclarativeView()
-view.setSource(QUrl('main.qml'))
-view.setResizeMode(QDeclarativeView.SizeRootObjectToView)
-
-rootObject = view.rootObject()
-rootObject.updateSignal.connect(system.Update)
-rootObject.escapeSignal.connect(StopAll)
-
-view.setGeometry(20, 20, rootObject.property("width"), rootObject.property("height"))
-view.show()
-for i in range(36):
-  rootObject.addElements()
-
-def Print(index, mouse):
-  print("Clicked: " + str(index) + " " + str(mouse.property("x")) + " " + str(mouse.property("y")))
-
-  
-i = 0
-files = []
-path = ""
-if os.path.exists("sounds"):
-  files = os.listdir("sounds")
-  path = "sounds"
-elif os.path.exists(os.path.join(os.pardir, "sounds")):
-  files = os.listdir(os.path.join(os.pardir, "sounds"))
-  path = os.path.join(os.pardir, "sounds")
-elif os.path.exists(os.path.join(os.pardir, os.pardir, "sounds")):
-  files = os.listdir(os.path.join(os.pardir, os.pardir, "sounds"))
-  path = os.path.join(os.pardir, os.pardir, "sounds")
-for f in files:
-  if f == ".DS_Store": continue
-  if f == "README": continue
-  (c, r) = divmod(i,36)
-  l = rootObject.getListContents(c)
-  e = l[r]
-  s = iSFX.Sound(system, os.path.join(path, f))
-  print(os.path.join(path, f))
-  s.fadeEntering(10000)
-  s.setPercentCallback(e.setProgress)
-  s.setNewNameCallback(e.setName)
-  s.setInStateCallback(e.setState)
-  s.setPlayingCallback(e.nowPlaying)
-  e.buttonSignal.connect(s.playStop)
-  e.setText(s.getName())
-  songs.append(s)
-  i+=1
-
-app.exec_()
+    app.exec_()
+    soundboard.save("sounds.xml")

@@ -32,38 +32,78 @@ _A force_range(_A a, _B b, _C c) {
   return (a < b ? b : (a > c ? c : a));
 }
 
+template<typename _T>
+struct Property {
+private:
+  _T value;
+  boost::signals2::signal<void(_T)> changed;
+public:
+  Property(_T v) : value(v) {}
+  operator _T& () {
+    return value;
+  }
+  template<typename _fun>
+  void connect(_fun f) {
+    changed.connect(f);
+    f(value);
+  }
+  void set(_T v) {
+    if (value != v) {
+      value = v;
+      changed(value);
+    }
+  }
+};
+
 struct Sound {
-  //boost::signals2::signal<void(std::string, std::string)> sigStateChange_str;
-  //boost::signals2::signal<void(std::string, uint32_t)> sigStateChange_u32;
-  //boost::signals2::signal<void(std::string, double)> sigStateChange_double;
-  //boost::signals2::signal<void(std::string, std::string)> sigStateChange;
   
-  boost::signals2::signal<void(std::string)> nameChanged;
-  boost::signals2::signal<void(std::string)> filePathChanged;
-  boost::signals2::signal<void(uint32_t)> lengthChanged;
+  //boost::signals2::signal<void(std::string)> nameChanged;
+  //boost::signals2::signal<void(std::string)> filePathChanged;
+  //boost::signals2::signal<void(uint32_t)> indexChanged;
+  //boost::signals2::signal<void(uint32_t)> lengthChanged;
+  //
+  //boost::signals2::signal<void(uint32_t)> startChanged;
+  //boost::signals2::signal<void(uint32_t)> stopChanged;
+  //
+  //boost::signals2::signal<void(uint8_t)> fadingInChanged;
+  //boost::signals2::signal<void(uint8_t)> fadingOutChanged;
+  //boost::signals2::signal<void(uint8_t)> fadingStopChanged;
+  //boost::signals2::signal<void(uint32_t)> fadeInChanged;
+  //boost::signals2::signal<void(uint32_t)> fadeOutChanged;
+  //boost::signals2::signal<void(uint32_t)> fadeStopChanged;
+  //
+  //boost::signals2::signal<void(uint32_t)> positionChanged;
+  //boost::signals2::signal<void(double)> percentChanged;
+  //
+  //boost::signals2::signal<void(uint8_t)> playingChanged;
+  //boost::signals2::signal<void(uint8_t)> pausedChanged;
+  //boost::signals2::signal<void(uint8_t)> loadingChanged;
+  //
+  //boost::signals2::signal<void(float)> masterVolumeChanged;
+  //boost::signals2::signal<void(float)> actualVolumeChanged;
+  //
+  //boost::signals2::signal<void(std::string)> waveformFileChanged;
   
-  boost::signals2::signal<void(uint32_t)> startChanged;
-  boost::signals2::signal<void(uint32_t)> stopChanged;
-  
-  boost::signals2::signal<void(uint8_t)> fadingInChanged;
-  boost::signals2::signal<void(uint8_t)> fadingOutChanged;
-  boost::signals2::signal<void(uint8_t)> fadingStopChanged;
-  boost::signals2::signal<void(uint32_t)> fadeInChanged;
-  boost::signals2::signal<void(uint32_t)> fadeOutChanged;
-  boost::signals2::signal<void(uint32_t)> fadeStopChanged;
-  
-  boost::signals2::signal<void(uint32_t)> positionChanged;
-  boost::signals2::signal<void(double)> percentChanged;
-  
-  boost::signals2::signal<void(uint8_t)> playingChanged;
-  boost::signals2::signal<void(uint8_t)> pausedChanged;
-  boost::signals2::signal<void(uint8_t)> loadingChanged;
-  
-  boost::signals2::signal<void(float)> masterVolumeChanged;
-  boost::signals2::signal<void(float)> actualVolumeChanged;
-  
-  // Responses to function calls
-  boost::signals2::signal<void(std::string)> waveformFileChanged;
+  Property<std::string> name;
+  Property<std::string> filePath;
+  Property<uint32_t> index;
+  Property<uint32_t> length;
+  Property<uint32_t> start;
+  Property<uint32_t> stop;
+  Property<uint8_t> fadingIn;
+  Property<uint8_t> fadingOut;
+  Property<uint8_t> fadingStop;
+  Property<uint32_t> fadeIn;
+  Property<uint32_t> fadeOut;
+  Property<uint32_t> fadeStop;
+  Property<uint32_t> position;
+  Property<double> percent;
+  Property<uint8_t> playing;
+  Property<uint8_t> paused;
+  Property<uint8_t> loading;
+  Property<float> masterVolume;
+  Property<float> actualVolume;
+  Property<std::string> waveformFile;
   
   private:
     iSFX::System& system;
@@ -72,40 +112,40 @@ struct Sound {
     
     boost::signals2::scoped_connection system_update_connection;
     
-    bool streaming; // streaming from disk (True) or stored in RAM (False)
     
-    bool playing;
-    bool paused;
-    bool loading;
-    bool fadingIn;
-    bool fadingOut;
-    bool fadingStop;
+    //bool playing;
+    //bool paused;
+    //bool loading;
+    //bool fadingIn;
+    //bool fadingOut;
+    //bool fadingStop;
     
-    float masterVolume;
+    //float masterVolume;
     float effectVolume;
     float maxVolume;
     float minVolume;
     float actualVolume;
     
-    uint32_t position;
+    //uint32_t position;
     
-    uint32_t start;
-    uint32_t end;
-    uint32_t fadeIn;
-    uint32_t fadeOut;
-    uint32_t fadeStop;
+    //uint32_t start;
+    //uint32_t end;
+    //uint32_t fadeIn;
+    //uint32_t fadeOut;
+    //uint32_t fadeStop;
+    
+    //std::string waveformPath;
     
     // Stuff that doesn't change
     std::string path;
     std::string name;
-    std::string waveformPath;
     uint32_t length;
     FMOD_SOUND_TYPE type;
     FMOD_SOUND_FORMAT format;
     int channels;
     int bits;
     
-    float defaultVolume;
+    float default_volume;
     float frequency;
     float pan;
     int priority;
@@ -114,7 +154,6 @@ struct Sound {
     Sound(iSFX::System* sys, std::string u, uint32_t l, std::string waveformPath) 
       : system((System&)*sys),
         channel(NULL),
-        sound(NULL),
         path(u),
         length(l),
         playing(false),
@@ -136,29 +175,11 @@ struct Sound {
         fadeStop(1),
         waveformPath(waveformPath)
     {
-      assert(system.system != NULL);
-    }
-    
-    void load() {
-      if (sound == NULL) {
-        streaming = false;
-        FMOD_RESULT result = system->createSound(path.c_str(), FMOD_HARDWARE | FMOD_NONBLOCKING | FMOD_ACCURATETIME, 0, &sound);
-        if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
-        system_update_connection = system.updateSignal.connect(boost::bind(&Sound::initialState, this));
-      } else {
-        std::cerr << "load() called when FMOD::Sound already exists." << std::endl;
-      }
-    }
-    
-    void stream() {
-      if (sound == NULL) {
-        streaming = true;
-        FMOD_RESULT result = system->createSound(path.c_str(), FMOD_HARDWARE | FMOD_NONBLOCKING | FMOD_CREATESTREAM, 0, &sound);
-        if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
-        system_update_connection = system.updateSignal.connect(boost::bind(&Sound::initialState, this));
-      } else {
-        std::cerr << "stream() called when FMOD::Sound already exists." << std::endl;
-      }
+      assert(system.system != NULL);//                                                           length == 0
+      FMOD_RESULT result = system->createSound(path.c_str(), FMOD_SOFTWARE | FMOD_NONBLOCKING | (length == 0 ? FMOD_ACCURATETIME : FMOD_CREATESTREAM), 0, &sound);
+      if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
+      system_update_connection = system.updateSignal.connect(boost::bind(&Sound::initialState, this));
+      delayInitialization = true;
     }
     
     ~Sound() {
@@ -167,97 +188,77 @@ struct Sound {
       std::cout << "Deconstructing sound object for '" << path << "'..." << std::endl;
     }
     
+    // This function is called the first time system updates. It may not be necessary
     void initialState() {
-      // if the Sound is not ready, it is still loading.
-      if (sound == NULL) {
-        system.updateSignal.disconnect(&Sound::initialState);
-        stream();
-      }
-      if (!this->isReady()) return;
-      std::cout << " ________________________________________________________________________________ " << std::endl;
-      std::cout << "||                              Initializing Sound                              ||" << std::endl;
-      std::cout << "||                                                                              ||" << std::endl;
+      //signalStateChange("length", length);
       
+      system.updateSignal.disconnect(&Sound::initialState);
+      system_update_connection = system.updateSignal.connect(boost::bind(&Sound::update, this));
+    }
+    
+    void finishedLoading() {
+      if (delayInitialization) return;
       //sound->setMode(FMOD_LOOP_OFF);
       sound->getFormat(&type, &format, &channels, &bits);
-      sound->getDefaults(&frequency, &defaultVolume, &pan, &priority);
+      sound->getDefaults(&frequency, &default_volume, &pan, &priority);
       sound->setDefaults(frequency, 0.0, pan, priority);
       
       const int len = 256;
       char buf[len] = {0};
-      sound->getName(buf, len);
-      name = std::string(buf);
+      FMOD_RESULT result = sound->getName(buf, len);
+      if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
+      name = std::string(buf); // stops at null
       
-      
-      std::cout << "||  Name: \""<<name<<"\""<<std::string(68-name.length(), ' ') << "||" << std::endl;
-      
-      if (!streaming) {
+      if (length == 0) {
         sound->getLength(&length, FMOD_TIMEUNIT_MS);
         lengthChanged(length);
         nameChanged(name);
-      
-        std::cout << "||  Loaded into memory.                                                         ||" << std::endl;
-      
+        
+        std::cout << "finishedLoading() - initial \""<<name<<"\"" << std::endl;
+        
         if (waveformPath != "") {
-          std::cout << "||  Generating waveform.                                                        ||" << std::endl;
           getWaveform(waveformPath, true);
+          printf("Finished generating waveform.\n");
         }
-      
-        // This stuff is causeing a segfault for certain sounds...
+        
         //printf("Freeing sound.\n");
         //sound->release();
-        //sound = NULL;
+        //printf("Creating stream.\n");
+        //result = system->createSound(path.c_str(), FMOD_SOFTWARE | FMOD_NONBLOCKING | FMOD_CREATESTREAM, 0, &sound);
+        //if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
         //return;
-      } else {
-        std::cout << "||  Streaming from disk.                                                        ||" << std::endl;
       }
       
+      // sooo...
       if (end == 0 || end == 1) {
         end = length-1;
+        std::cout << "stopChanged(end); @ line 194" << std::endl;
+        stopChanged(end);
       }
       
-      // signal all values
-      nameChanged(name);
-      filePathChanged(path);
-      lengthChanged(length);
-      startChanged(start);
-      stopChanged(end);
-      fadingInChanged(fadingIn);
-      fadingOutChanged(fadingOut);
-      fadingStopChanged(fadingStop);
-      fadeInChanged(fadeIn);
-      fadeOutChanged(fadeOut);
-      fadeStopChanged(fadeStop);
-      positionChanged(position);
-      percentChanged((length ? (100.0*position)/length : 0));
-      playingChanged(playing);
-      pausedChanged(paused);
-      loadingChanged(loading);
-      masterVolumeChanged(masterVolume);
-      actualVolumeChanged(actualVolume);
-      
-      //std::cout << "\nName: '" << name << "'" << std::endl
-      //          << "[start   fadeIn   fadeOut   end   length ]" << std::endl
-      //          << "[" << start << " " << fadeIn << " " << fadeOut << " " << end << " " << length << "]"<< std::endl
-      //          << "masterVolume: " << masterVolume << std::endl << std::endl;
+      std::cout << "\nName: '" << name << "'" << std::endl
+                << "[start   fadeIn   fadeOut   end   length ]" << std::endl
+                << "[" << start << " " << fadeIn << " " << fadeOut << " " << end << " " << length << "]"<< std::endl
+                << "masterVolume: " << masterVolume << std::endl << std::endl;
       
       uint32_t min = (length/1000)/60;
       uint32_t sec = (length/1000)%60;
       uint32_t dec = length%1000;
-      printf("||  Length: %02d:%02d.%03d                                                           ||\n", min, sec, dec);
+      printf("Finished loading: \"%s\" - %02d:%02d.%03d\n", name.c_str(), min, sec, dec);
       
       loading = false;
       loadingChanged(loading);
-      
-      system.updateSignal.disconnect(&Sound::initialState);
-      system_update_connection = system.updateSignal.connect(boost::bind(&Sound::update, this));
-      std::cout << "||______________________________________________________________________________||" << std::endl;
     }
 
     void update() {
       if (sound == NULL) return;
       paused = isPaused();
       playing = isPlaying();
+      if (loading) {
+        if (isReady())
+          finishedLoading();
+        return;
+      }
       
       // Get the current position of the sound and how long it has been since update()
       // executed last. 
@@ -265,7 +266,7 @@ struct Sound {
       int64_t dt = (int64_t)new_pos-(int64_t)position;
       if (dt == 0) return;
       std::cout << "t: " << new_pos << " dt: " << dt << std::endl;
-      //std::cout << "start: " << start << " stop: " << end << std::endl;
+      std::cout << "start: " << start << " stop: " << end << std::endl;
       
       // If the start has skipped forward, skip forward.
       if (new_pos < start) {
@@ -301,17 +302,13 @@ struct Sound {
         if (channel != NULL) {
           channel->setVolume(actualVolume);
         }
+        //signalStateChange("actualVolume", actualVolume);
         actualVolumeChanged(actualVolume);
       }
-      
-      // determine if the sound has stopped playing
-      if ((!playing && !loading) || channel == NULL) {
-        std::cout << "disconnecting sound" << std::endl;
-        system_update_connection.disconnect();
-        position = 0;
-        effectVolume = 0.0;
-      }
+      // Signal other new states
+      //signalStateChange("position", position);
       positionChanged(position);
+      //signalStateChange("percent", (length ? (100.0*position)/length : 0));
       percentChanged((length ? (100.0*position)/length : 0));
       
       // Print statements for debugging
@@ -319,35 +316,49 @@ struct Sound {
       //          << "playing: " << playing << " paused: " << paused << std::endl
       //          << "loading: " << loading << " length: " << length << std::endl
       //          << "volume: " << actualVolume << std::endl << std::endl;
+      
+      // determine if the sound has stopped playing
+      if ((!playing && !loading) || channel == NULL) {
+        std::cout << "disconnecting song from system update signal" << std::endl;
+        system_update_connection.disconnect();
+        position = 0;
+        effectVolume = 0.0;
+      }
     }
     
     void setStart(int64_t ms) {
+      std::cout << "setStart("<<ms<<") => ";
       start = force_range(ms, 0, end-fadeOut-fadeIn);
-      if (start != ms) {
+      if (start != ms)
         startChanged(start);
-      }
+      std::cout << start << std::endl;
     }
     
     void setStop(int64_t ms) {
+      std::cout << "setStop("<<ms<<") => ";
       if (ms == 0) ms = length-1;
       end = force_range(ms, start+fadeIn+fadeOut+1, length-1);
       if (end != ms) {
+        std::cout << "   stopChanged(end);" << std::endl;
         stopChanged(end);
       }
+      std::cout << end << std::endl;
     }
     
     void setFadeIn(int64_t len) {
+      std::cout << "setFadeIn("<<len<<") => ";
       fadeIn = force_range(len, 1, end-start-fadeOut-1);
-      if (fadeIn != len) {
+      if (fadeIn != len)
         fadeInChanged(fadeIn);
-      }
+      std::cout << fadeIn << std::endl;
     }
     
     void setFadeOut(int64_t len) {
+      std::cout << "setFadeOut("<<len<<") => ";
       fadeOut = force_range(len, 1, end-start-fadeIn-1);
-      if (fadeOut != len) {
+      if (fadeOut != len)
         fadeOutChanged(fadeOut);
-      }
+      std::cout << fadeOut << std::endl;
     }
     void setFadeStop(int64_t len) {
       fadeStop = len;
@@ -366,6 +377,7 @@ struct Sound {
         printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
       setPosition(start);
       if (dont_pause) {
+        std::cout << "attempting to unpause" << std::endl;
         unpause();
       }
       if (!system_update_connection.connected())
@@ -376,6 +388,7 @@ struct Sound {
       if (channel != NULL) {
         channel->setPaused(true);
         paused = true;
+        std::cout << "Pausing" << std::endl;
       }
     }
     
@@ -383,6 +396,7 @@ struct Sound {
       if (channel != NULL) {
         channel->setPaused(false);
         paused = false;
+        std::cout << "Unpausing" << std::endl;
       }
     }
     
@@ -436,7 +450,7 @@ struct Sound {
     void setPosition(int64_t ms) {
       if (channel != NULL) { 
         if (ms < 0) ms = 0;
-        else if (ms >= length) ms = length-1;
+        else if (ms > length) ms = length;
         channel->setPosition(ms, FMOD_TIMEUNIT_MS);
         position = ms;
       }
@@ -486,27 +500,19 @@ struct Sound {
       
     	std::stringstream left_speaker, right_speaker;
     	
-    	void *  ptr1 = NULL;
-    	void *  ptr2 = NULL;
+    	void *  ptr1;
+    	void *  ptr2;
     	uint32_t  len1;
     	uint32_t  len2;
     	
       uint32_t length_pcmbytes; // probably should use FMOD_TIMEUNIT_PCM
-      FMOD_RESULT result = sound->getLength(&length_pcmbytes, FMOD_TIMEUNIT_PCMBYTES);
-      if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
+      sound->getLength(&length_pcmbytes, FMOD_TIMEUNIT_PCMBYTES);
       
-    	result = sound->lock(0, length_pcmbytes, &ptr1, &ptr2, &len1, &len2);
+    	sound->lock(0, length_pcmbytes, &ptr1, &ptr2, &len1, &len2);
       //std::cout << "len1: " << len1 << std::endl;
       //std::cout << "len2: " << len2 << std::endl;
-    	if (result || ptr1 == NULL) {
-        if (result) {
-          std::cout << "length_pcmbytes: " << length_pcmbytes << std::endl;
-        	printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
-        }
-    	  if (ptr1 == NULL) {
-          std::cout << "ERROR: ptr1 is NULL with length " << len1 << std::endl;
-          std::cout << "       ptr2 is 0x" << std::hex << ptr2 << " with length " << len2 << std::endl;
-        }
+    	if (ptr1 == NULL) {
+        std::cout << "lock returned NULL" << std::endl;
         //signalStateChange("svg_path", "waveform.svg");
         waveformFileChanged("blank.svg");
         sound->unlock(ptr1, ptr2, len1, len2);
