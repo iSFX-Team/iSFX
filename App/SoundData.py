@@ -152,6 +152,11 @@ class SoundData(QtCore.QObject):
     def doStop(self):
       if not (self._backend == None):
         self._backend.stop()
+        
+    @QtCore.pyqtSlot()
+    def doKill(self):
+      if not (self._backend == None):
+        self._backend.kill()
     
     #@QtCore.pyqtSlot()
     #def getWaveform(self):

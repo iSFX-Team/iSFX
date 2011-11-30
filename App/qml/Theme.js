@@ -45,6 +45,7 @@ var sb_bkg = '#031D48';
 var ft_wv_bkg = '#A9BFE5';
 var ft_wv_txt = '';
 
+var ft_ed_bkg_inactive = 'red';
 var ft_ed_bkg = '#719CE5';
 var ft_ed_txt = '';
 var ft_ed_title = '';

@@ -6,3 +6,5 @@
 *.dylib
 *.pyd
 !Lib/Python/build/*
+App/waveforms/*
+App/sounds.xml

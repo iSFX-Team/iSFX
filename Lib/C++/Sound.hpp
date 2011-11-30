@@ -27,16 +27,10 @@ namespace iSFX {
   
 template <typename _A, typename _B, typename _C>
 _A force_range(_A a, _B b, _C c) {
-  //if (a < b) a = b;
-  //else if (a > c) a = c;
   return (a < b ? b : (a > c ? c : a));
 }
 
 struct Sound {
-  //boost::signals2::signal<void(std::string, std::string)> sigStateChange_str;
-  //boost::signals2::signal<void(std::string, uint32_t)> sigStateChange_u32;
-  //boost::signals2::signal<void(std::string, double)> sigStateChange_double;
-  //boost::signals2::signal<void(std::string, std::string)> sigStateChange;
   
   boost::signals2::signal<void(std::string)> nameChanged;
   boost::signals2::signal<void(std::string)> filePathChanged;
@@ -80,6 +74,7 @@ struct Sound {
     bool fadingIn;
     bool fadingOut;
     bool fadingStop;
+    uint32_t fadingStopPosition;
     
     float masterVolume;
     float effectVolume;
@@ -123,6 +118,7 @@ struct Sound {
         fadingIn(false),
         fadingOut(false),
         fadingStop(false),
+        fadingStopPosition(0),
         masterVolume(1.0),
         effectVolume(0.0),
         actualVolume(0.0),
@@ -143,7 +139,7 @@ struct Sound {
       if (sound == NULL) {
         streaming = false;
         FMOD_RESULT result = system->createSound(path.c_str(), FMOD_HARDWARE | FMOD_NONBLOCKING | FMOD_ACCURATETIME, 0, &sound);
-        if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
+        if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
         system_update_connection = system.updateSignal.connect(boost::bind(&Sound::initialState, this));
       } else {
         std::cerr << "load() called when FMOD::Sound already exists." << std::endl;
@@ -154,7 +150,7 @@ struct Sound {
       if (sound == NULL) {
         streaming = true;
         FMOD_RESULT result = system->createSound(path.c_str(), FMOD_HARDWARE | FMOD_NONBLOCKING | FMOD_CREATESTREAM, 0, &sound);
-        if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
+        if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
         system_update_connection = system.updateSignal.connect(boost::bind(&Sound::initialState, this));
       } else {
         std::cerr << "stream() called when FMOD::Sound already exists." << std::endl;
@@ -204,6 +200,10 @@ struct Sound {
         }
       
         // This stuff is causeing a segfault for certain sounds...
+        // But the goal of this is to free the sound, set the pointer to NULL
+        // Then the sound function will end up calling stream() eventually
+        // Effectively freeing all of the memory required to hold the sound
+        // while the length is calculated and the waveform generated.
         //printf("Freeing sound.\n");
         //sound->release();
         //sound = NULL;
@@ -274,6 +274,12 @@ struct Sound {
       
       // Calculate the volume based on start, end, fadeIn, fadeOut, and position
       effectVolume = 1.0;
+      if (fadingStop) {
+        // TODO: what to do when fadingStopPosition + fadeStop > length
+        int64_t d = (int64_t)new_pos - fadingStopPosition;
+        if (d < 0 || d >= fadeStop) kill();
+        effectVolume *= 1-(1.0/fadeStop*d);
+      }
       if (start <= new_pos && new_pos <= start+fadeIn) {
         effectVolume *= 1.0/fadeIn*(new_pos-start);
         fadingIn = true;
@@ -290,7 +296,7 @@ struct Sound {
         fadingOut = false;
       }
       if (new_pos >= end) {
-        stop();
+        kill();
       }
       position = new_pos;
       
@@ -363,7 +369,7 @@ struct Sound {
       paused = true;
       FMOD_RESULT result = system->playSound(FMOD_CHANNEL_FREE, sound, true, &channel);
       if (result)
-        printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
+        printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
       setPosition(start);
       if (dont_pause) {
         unpause();
@@ -412,7 +418,7 @@ struct Sound {
     bool isReady() {
       FMOD_OPENSTATE state = FMOD_OPENSTATE_ERROR;
       FMOD_RESULT result = sound->getOpenState(&state, NULL, NULL, NULL);
-      if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
+      if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
       return state == FMOD_OPENSTATE_READY;
     }
     
@@ -425,12 +431,23 @@ struct Sound {
     }
     
     void stop() {
+      if (channel != NULL && !fadingStop) {
+        fadingStop = true;
+        fadingStopPosition = position;
+      }
+    }
+    
+    void kill() {
       if (channel != NULL) { 
         channel->stop();
-        effectVolume = 0;
-        playing = false;
-        paused = false;
-      }
+      }  
+      effectVolume = 0;
+      playing = false;
+      paused = false;
+      fadingStopPosition = 0;
+      fadingIn = false;
+      fadingStop = false;
+      fadingOut = false;
     }
     
     void setPosition(int64_t ms) {
@@ -493,19 +510,21 @@ struct Sound {
     	
       uint32_t length_pcmbytes; // probably should use FMOD_TIMEUNIT_PCM
       FMOD_RESULT result = sound->getLength(&length_pcmbytes, FMOD_TIMEUNIT_PCMBYTES);
-      if (result) printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
+      if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
       
     	result = sound->lock(0, length_pcmbytes, &ptr1, &ptr2, &len1, &len2);
-      //std::cout << "len1: " << len1 << std::endl;
-      //std::cout << "len2: " << len2 << std::endl;
     	if (result || ptr1 == NULL) {
         if (result) {
           std::cout << "length_pcmbytes: " << length_pcmbytes << std::endl;
-        	printf("FMOD error! (%d) %s line:%d\n", result, FMOD_ErrorString(result), __LINE__);
+        	printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
         }
     	  if (ptr1 == NULL) {
-          std::cout << "ERROR: ptr1 is NULL with length " << len1 << std::endl;
-          std::cout << "       ptr2 is 0x" << std::hex << ptr2 << " with length " << len2 << std::endl;
+          std::cout << "||" << std::endl
+                    << "||  ERROR: ptr1 is NULL with length " << len1 << std::endl
+                    << "||         ptr2 is 0x" << std::hex << ptr2 << " with length " << len2 << std::endl
+                    << "||         If this is a .xm file, this is a known issue." << std::endl
+                    << "||         (at least for unreeeal super hero 3, something.xm)" << std::endl
+                    << "||" << std::endl;
         }
         //signalStateChange("svg_path", "waveform.svg");
         waveformFileChanged("blank.svg");

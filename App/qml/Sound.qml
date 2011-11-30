@@ -25,6 +25,7 @@ Rectangle {
   Binding { when: shouldBind; target: sound; property: "y"; value: placeholder.y+viewData.rowPadding; }
   Binding { when: shouldBind; target: placeholder; property: "width"; value: width+viewData.columnPadding; }
   Binding { when: shouldBind; target: placeholder; property: "height"; value: height+viewData.rowPadding; }
+  Binding { when: shouldBind; target: placeholder; property: "target"; value: index; }
   
   z: (dragArea.dragging ? 1 : 0)
   visible: x+width-1 < parent.width
@@ -113,8 +114,7 @@ Rectangle {
       id:buttons;
       width: 5+4+edit_rect.width/*+5+volume.width*/;
       anchors.right: container.right;
-      y:1
-      height: parent.height-1;
+      height: parent.height;
       
       opacity: beingEdited || dragArea.containsMouse || edit_button.containsMouse
       Behavior on opacity {

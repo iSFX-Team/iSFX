@@ -106,6 +106,7 @@ static PyObject * Sound_playStop(Sound* self) { self->_sound->playStop(); Py_RET
 static PyObject * Sound_pause(Sound* self) { self->_sound->pause(); Py_RETURN_NONE; }
 static PyObject * Sound_unpause(Sound* self) { self->_sound->unpause(); Py_RETURN_NONE; }
 static PyObject * Sound_stop(Sound* self) { self->_sound->stop(); Py_RETURN_NONE; }
+static PyObject * Sound_kill(Sound* self) { self->_sound->kill(); Py_RETURN_NONE; }
 static PyObject * Sound_getWaveform(Sound* self, PyObject* args) {
   const char * s;
   if (!PyArg_ParseTuple(args, "s", &s)) { PyErr_SetString(PyExc_TypeError, "parameter parse failed in Sound_getWaveform"); return NULL; }
@@ -252,6 +253,7 @@ static PyMethodDef Sound_methods[] = {
   {"pause", (PyCFunction)Sound_pause, METH_VARARGS, "" },
   {"unpause", (PyCFunction)Sound_unpause, METH_VARARGS, "" },
   {"stop", (PyCFunction)Sound_stop, METH_VARARGS, "" },
+  {"kill", (PyCFunction)Sound_kill, METH_VARARGS, "" },
   {"getWaveform", (PyCFunction)Sound_getWaveform, METH_VARARGS, "" },
   
   {"setMasterVolume", (PyCFunction)Sound_setMasterVolume, METH_VARARGS, "" },

@@ -13,6 +13,7 @@ import iSFX
 class SoundBoard(QtCore.QObject):
     
     soundsChanged = QtCore.pyqtSignal()
+    sortedChanged = QtCore.pyqtSignal()
     
     supported_file_extensions = ['.AIFF', '.ASF', '.ASX', '.DLS', '.FLAC', '.FSB', '.IT', 
                                  '.M3U', '.MID', '.MOD', '.MP2', '.MP3', '.OGG', '.PLS', 
@@ -172,19 +173,19 @@ class SoundBoard(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def killAll(self):
-      for s in _sounds:
-        s.stop()
+      for s in self._sounds:
+        s.doKill()
     
     @QtCore.pyqtSlot()
     def stopAll(self):
-      for s in _sounds:
-        s.stop()
+      for s in self._sounds:
+        s.doStop()
     
     def sort(self):
       self._sorted = sorted(self._sounds, key=lambda s: s._index)
       for i in range(len(self._sorted)): # this is a quickfix. Problem was that all indexes were 0 initially
         self._sorted[i].index = i
-      #self.soundsChanged.emit()
+      self.sortedChanged.emit()
       
     @QtCore.pyqtSlot(int)
     def promote(self, index):
@@ -209,8 +210,14 @@ class SoundBoard(QtCore.QObject):
           self._sorted[i].index = self._sorted[i+step].index
         self._sorted[new].index = index
         self.sort()
-             
-                
+    
+    @QtCore.pyqtProperty(QtDeclarative.QPyDeclarativeListProperty, notify=sortedChanged)
+    def sorted(self):
+        return QtDeclarative.QPyDeclarativeListProperty(self, self._sorted)     
+    
+    def _sorted(self, row):
+        return self._sorted[row]
+    
     @QtCore.pyqtProperty(QtDeclarative.QPyDeclarativeListProperty, notify=soundsChanged)
     def sounds(self):
         return QtDeclarative.QPyDeclarativeListProperty(self, self._sounds)

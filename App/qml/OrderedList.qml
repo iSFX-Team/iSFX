@@ -25,7 +25,7 @@ Rectangle {
     id: viewDataObject;
     property int insertAbove: -1;
     property variant placeholders;
-    property int columnPadding: 3;
+    property int columnPadding: 1;
     property int rowPadding: 1;
     property int height: grid.childrenRect.height;
     property int focusedColumn: 0;
