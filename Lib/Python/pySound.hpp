@@ -98,6 +98,18 @@ static PyObject * Sound_setFadeStop(Sound* self, PyObject* args) {
   self->_sound->setFadeStop(a);
   Py_RETURN_NONE;
 }
+static PyObject * Sound_setLowPassFilter(Sound* self, PyObject* args) {
+  uint32_t a;
+  if (!PyArg_ParseTuple(args, "I", &a)) { PyErr_SetString(PyExc_TypeError, "parameter parse failed in Sound_setLowPassFilter"); return NULL; }
+  self->_sound->setLowPassFilter(a);
+  Py_RETURN_NONE;
+}
+static PyObject * Sound_setHighPassFilter(Sound* self, PyObject* args) {
+  uint32_t a;
+  if (!PyArg_ParseTuple(args, "I", &a)) { PyErr_SetString(PyExc_TypeError, "parameter parse failed in Sound_setHighPassFilter"); return NULL; }
+  self->_sound->setHighPassFilter(a);
+  Py_RETURN_NONE;
+}
 
 static PyObject * Sound_play(Sound* self) { self->_sound->play(); Py_RETURN_NONE; }
 static PyObject * Sound_load(Sound* self) { self->_sound->load(); Py_RETURN_NONE; }
@@ -265,6 +277,9 @@ static PyMethodDef Sound_methods[] = {
   {"setFadeIn", (PyCFunction)Sound_setFadeIn, METH_VARARGS, "" },
   {"setFadeOut", (PyCFunction)Sound_setFadeOut, METH_VARARGS, "" },
   {"setFadeStop", (PyCFunction)Sound_setFadeStop, METH_VARARGS, "" },
+  {"setLowPassFilter", (PyCFunction)Sound_setLowPassFilter, METH_VARARGS, "" },
+  {"setHighPassFilter", (PyCFunction)Sound_setHighPassFilter, METH_VARARGS, "" },
+  
   
   {"onNameChanged", (PyCFunction)Sound_onNameChanged, METH_VARARGS, "" },
   {"onFilePathChanged", (PyCFunction)Sound_onFilePathChanged, METH_VARARGS, "" },

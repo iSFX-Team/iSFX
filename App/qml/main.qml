@@ -25,6 +25,7 @@ Rectangle {
         console.log(Hotkey.toIndex(c))
         if (Hotkey.toIndex(c) < ol.viewData.height/(20+ol.viewData.rowPadding))
         sorted[Hotkey.toIndex(c)+(ol.viewData.height/(20+ol.viewData.rowPadding)*ol.viewData.focusedColumn)].doPlayStop();
+        sorted[Hotkey.toIndex(c)+(ol.viewData.height/(20+ol.viewData.rowPadding)*ol.viewData.focusedColumn)].editClicked();
       }
     }
   }
@@ -63,7 +64,7 @@ Rectangle {
             		buttonText: "F"+(index+1)
             		buttonColor: "#A0A0A0"
             		textColor: "#404040"
-            		width: parent.width/5;
+            		width: (parent.width)/5+1; // c&p from sound.qml
                 height: parent.height;
                 radius: 0
             		onButtonClicked: { ol.viewData.focusedColumn = index }
@@ -99,7 +100,7 @@ Rectangle {
       }
       Rectangle {
         id: sideButtons;
-        color: "blue"
+        color: "black"
         width: 20;
         height: parent.height;
         Text { text: "sideButtons" }

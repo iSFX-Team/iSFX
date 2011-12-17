@@ -6,6 +6,7 @@
 
 #include "iSFX.hpp"
 #include <iostream>
+#include <sstream>
 #include <string>
 
 struct System {
@@ -49,13 +50,31 @@ System_Update(System *self)
   Py_RETURN_NONE;
 }
 
+static PyObject*
+System_getWaveData(System *self, PyObject* args) {
+  uint8_t u;
+  if (!PyArg_ParseTuple(args, "I", &u)) { PyErr_SetString(PyExc_TypeError, "parameter parse failed in System_getWaveData"); return NULL; }
+  const std::vector<float>& data = self->_system->getWaveData(u);
+  std::stringstream ss;
+  ss.precision(4);
+  for (int i = 0; i < data.size(); i++) {
+    ss << i << "," << data[i] << "\n";
+  }
+  ss.flush();
+  PyObject* ret = Py_BuildValue("s", ss.str().c_str());
+  if (ret == NULL) std::cout << "RET == NULL" << std::endl;
+  //Py_XINCREF(ret);
+  return ret;
+}
+
 
 static PyMemberDef System_members[] = {
     {NULL}  /* Sentinel */
 };
 
 static PyMethodDef System_methods[] = {
-    {"Update", (PyCFunction)System_Update, METH_NOARGS, "Updates the system" }, 
+    {"Update", (PyCFunction)System_Update, METH_NOARGS, "Updates the system" },
+    {"getWaveData", (PyCFunction)System_getWaveData, METH_VARARGS, "" },
     {NULL}  /* Sentinel */
 };
 

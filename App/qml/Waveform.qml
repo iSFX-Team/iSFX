@@ -5,6 +5,8 @@ Item {
   width: parent.width;
   height: parent.height;
   property alias waveformFilePath: waveform.source;
+  property bool slidersVisible: true;
+  //property alias cache: waveform.cache;
   
   property double start;
   property double stop;
@@ -77,7 +79,7 @@ Item {
     height: parent.height;
     Image {
       id: waveform
-      //cache: false;
+      cache: false;
       asynchronous: true;
       source: "../blank.svg";
       width: parent.width;
@@ -105,99 +107,106 @@ Item {
     }
   }
   
-  Rectangle {
-    x: x1*container.width;
-    width: len1*container.width;
-    height: parent.height;
-    color: "blue"
-    opacity: 0.4+(z-1)*0.1
-    Draggable {
-      id: start_drag
-      anchors.fill: parent;
-      onDragChanged: {
-        set_start(drag.x/container.width);
-      }
-      onClicked: { raise_z(start_boundry, stop_boundry); }
-    }
-    z: start_boundry.z
-  }
-  Rectangle {
-    id: start_boundry
-    x: (x1+len1)*container.width;
-    width: 1
-    height: parent.height;
-    color: "blue"
-    z:1
+  Item {
+    id: slider_container;
+    anchors.fill: parent;
+    visible: slidersVisible
+    
+    
     Rectangle {
-      color: (start_boundry_drag.containsMouse && !start_boundry_drag.dragging  ? "blue" : "transparent")
-      width: 5
+      x: x1*container.width;
+      width: len1*container.width;
       height: parent.height;
-      x: -2
-      Item {
+      color: "blue"
+      opacity: 0.4+(z-1)*0.1
+      Draggable {
+        id: start_drag
+        anchors.fill: parent;
+        onDragChanged: {
+          set_start(drag.x/container.width);
+        }
+        onClicked: { raise_z(start_boundry, stop_boundry); }
+      }
+      z: start_boundry.z
+    }
+    Rectangle {
+      id: start_boundry
+      x: (x1+len1)*container.width;
+      width: 1
+      height: parent.height;
+      color: "blue"
+      z:1
+      Rectangle {
+        color: (start_boundry_drag.containsMouse && !start_boundry_drag.dragging  ? "blue" : "transparent")
+        width: 5
         height: parent.height;
-        width: parent.width+2;
-        x:-1
-        Draggable {
-          anchors.fill: parent;
-          id: start_boundry_drag
-          target: parent.parent.parent;
-          onDragChanged: {
-            set_fadein((drag.x-x1*container.width)/container.width);
+        x: -2
+        Item {
+          height: parent.height;
+          width: parent.width+2;
+          x:-1
+          Draggable {
+            anchors.fill: parent;
+            id: start_boundry_drag
+            target: parent.parent.parent;
+            onDragChanged: {
+              set_fadein((drag.x-x1*container.width)/container.width);
+            }
+            onClicked: { raise_z(start_boundry, stop_boundry); }
           }
-          onClicked: { raise_z(start_boundry, stop_boundry); }
         }
       }
     }
-  }
-  Rectangle {
-    x: (x2-len2)*container.width;
-    width: len2*container.width;
-    height: parent.height;
-    color: "red"
-    opacity: 0.4+(z-1)*0.1
-    Draggable {
-      id: stop_drag
-      anchors.fill: parent;
-      onDragChanged: {
-        set_stop((drag.x+len2*container.width)/container.width);
-      }
-      onPressed: { raise_z(stop_boundry, start_boundry); }
-    }
-    z: stop_boundry.z
-  }
-  Rectangle {
-    id: stop_boundry
-    x: (x2-len2)*container.width;
-    width: 1
-    height: parent.height;
-    color: "red"
-    z:2
     Rectangle {
-      color: (stop_boundry_drag.containsMouse && !stop_boundry_drag.dragging  ? "red" : "transparent")
-      width: 5
+      x: (x2-len2)*container.width;
+      width: len2*container.width;
       height: parent.height;
-      x: -2
-      Item {
+      color: "red"
+      opacity: 0.4+(z-1)*0.1
+      Draggable {
+        id: stop_drag
+        anchors.fill: parent;
+        onDragChanged: {
+          set_stop((drag.x+len2*container.width)/container.width);
+        }
+        onPressed: { raise_z(stop_boundry, start_boundry); }
+      }
+      z: stop_boundry.z
+    }
+    Rectangle {
+      id: stop_boundry
+      x: (x2-len2)*container.width;
+      width: 1
+      height: parent.height;
+      color: "red"
+      z:2
+      Rectangle {
+        color: (stop_boundry_drag.containsMouse && !stop_boundry_drag.dragging  ? "red" : "transparent")
+        width: 5
         height: parent.height;
-        width: parent.width+2;
-        x:-1
-        Draggable {
-          id: stop_boundry_drag
-          anchors.fill: parent;
-          target: parent.parent.parent;
-          onDragChanged: {
-            set_fadeout((x2*container.width-drag.x)/container.width);
+        x: -2
+        Item {
+          height: parent.height;
+          width: parent.width+2;
+          x:-1
+          Draggable {
+            id: stop_boundry_drag
+            anchors.fill: parent;
+            target: parent.parent.parent;
+            onDragChanged: {
+              set_fadeout((x2*container.width-drag.x)/container.width);
+            }
+            onPressed: { raise_z(stop_boundry, start_boundry); }
           }
-          onPressed: { raise_z(stop_boundry, start_boundry); }
         }
       }
     }
-  }
-  Rectangle {
-    x: percent/100.0*container.width;
-    width: 1;
-    height: parent.height;
-    color: "black"
-    z:3
+    Rectangle {
+      x: percent/100.0*container.width;
+      width: 1;
+      height: parent.height;
+      color: "black"
+      z:3
+    }
   }
 }

@@ -7,6 +7,34 @@ Rectangle {
   property variant oldModelData;
   property variant modelData;
   property variant index;
+  property int dummy: 1;
+  property bool realtimeWaveform: false;
+  
+  Timer {
+    id: waveDataTimer
+    interval: 50;
+    repeat: true;
+    onTriggered: {
+      dummy += 1
+      waveform.waveformFilePath = "image://waveFactory/foo"+dummy
+    }
+  }
+  
+  onRealtimeWaveformChanged: {
+    console.log("onRealtimeWaveformChanged")
+    if (realtimeWaveform) {
+      waveDataTimer.start();
+      waveform.slidersVisible = false;
+    } else {    
+      waveform.slidersVisible = true;
+      waveDataTimer.stop();
+      if (modelData !== undefined) {
+        waveform.waveformFilePath = "../"+modelData.waveformFile;
+      } else {
+        waveform.waveformFilePath = "../blank.svg";
+      }
+    }
+  }
   
   onModelDataChanged: {
     if (oldModelData !== undefined) {
@@ -25,8 +53,15 @@ Rectangle {
       modelData.fadeOutChanged.connect(update_waveform);
       //edit_tab.slider.set_value(modelData.masterVolume)
       //modelData.waveformFileChanged.connect(load_waveform);
-      //modelData.getWaveform();
-    }
+      if (!realtimeWaveform) {
+        waveDataTimer.stop();
+        waveform.waveformFilePath = "../"+modelData.waveformFile;
+        waveform.slidersVisible = true;
+      }
+    }// else {
+    //  console.log("STARTING TIMER STARTING TIMER STARTING TIMER")
+    //  waveDataTimer.start();
+    //}
   }
   
   function update_waveform() {
@@ -68,7 +103,8 @@ Rectangle {
     Waveform {
       id: waveform
       x: 5
-      waveformFilePath: (modelData !== undefined ? "../"+modelData.waveformFile : "");
+      //cache: true;
+      //waveformFilePath: (modelData !== undefined ? "../"+modelData.waveformFile : "");
       height: parent.height;
       width: parent.width-10;
       percent: (modelData !== undefined) ? modelData.percent : 0;
@@ -89,13 +125,14 @@ Rectangle {
     id: tabs
     anchors.right: parent.right;
     tabColor: "darkgray"
+    activeTabColor: "orange"
     tabBackground: "gray"
-    property string timerText: ""
     width: 240;
     height: parent.height
     model: [
       edit_tab, 
       timer_tab,
+      options_tab,
       about_tab
     ]
   }
@@ -120,17 +157,11 @@ Rectangle {
         when: tab !== undefined
         target: tab
         property: "text"
-        value: (timer.running && !visible ? "Timer: " + timer_text.text : "Timer")
+        value: (stopwatch.running && !visible ? "Timer: " + timer_text.text : "Timer")
       }
       
-      Timer {
-        id: timer;
-        interval: 1000;
-        triggeredOnStart: true;
-        repeat: true;
-        onTriggered: {
-          timer_text.seconds += 1;
-        }
+      Stopwatch {
+        id: stopwatch;
       }
       
       Column {
@@ -140,7 +171,7 @@ Rectangle {
           id: timer_text;
           property int seconds: 0;
           property bool paused: false;
-          text: ('00'+(seconds/60).toFixed(0)).substr(-2) + ":" + ('00'+(seconds%60).toFixed(0)).substr(-2);
+          text: ('00'+(stopwatch.diff/60).toFixed(0)).substr(-2) + ":" + ('00'+(stopwatch.diff%60).toFixed(0)).substr(-2);
           font.pixelSize: 40
           color: "black";
         }
@@ -149,11 +180,8 @@ Rectangle {
         	borderColor: "black"
         	buttonColor: "white"
         	onButtonClicked: {
-        	  if (!timer.running) {
-        	    timer.start();
-        	    if (!timer_text.paused) timer_text.seconds = 0;
-          	  timer_text.paused = false;
-          	  //'#'+('00000'+(Math.random()*16777216<<0).toString(16)).substr(-6)
+        	  if (!stopwatch.running) {
+        	    stopwatch.start();
       	    }
         	}
         }
@@ -162,8 +190,7 @@ Rectangle {
         	borderColor: "black"
         	buttonColor: "white"
         	onButtonClicked: {
-        	  timer_text.paused = false;
-        	  timer.stop();
+        	  stopwatch.stop();
         	}
         }
         Button {
@@ -171,9 +198,35 @@ Rectangle {
         	borderColor: "black"
         	buttonColor: "white"
         	onButtonClicked: {
-        	  timer_text.paused = true;
-        	  timer.stop();
+        	  stopwatch.pause();
         	}
+        }
+        Button {
+        	buttonText: "Reset"
+        	borderColor: "black"
+        	buttonColor: "white"
+        	onButtonClicked: {
+        	  stopwatch.reset();
+        	}
+        }
+      }
+    }
+  }
+  
+  Component {
+    id: options_tab;
+    Item {
+      anchors.fill: parent;
+      
+      property variant tab;
+      onTabChanged: {
+        tab.text = "Options"
+      }
+      
+      Checkbox {
+        text: "realtime waveform"
+        onCheckedChanged: {
+          edit_window.realtimeWaveform = checked;
         }
       }
     }
@@ -305,6 +358,24 @@ Rectangle {
             id: fadestop_input;
             min: 0;
             onAccepted: { if (modelData !== undefined) { modelData.fadeStop = value*1000; } }
+          }
+        }
+        Row {
+          Checkbox {
+            text: "highpass"
+            onCheckedChanged: {
+              if (modelData !== undefined) {
+                modelData.highPassFilter = checked;
+              }
+            }
+          }
+          Checkbox {
+            text: "lowpass"
+            onCheckedChanged: {
+              if (modelData !== undefined) {
+                modelData.lowPassFilter = checked;
+              }
+            }
           }
         }
       }

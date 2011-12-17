@@ -169,7 +169,11 @@ class SoundBoard(QtCore.QObject):
         #   #s.indexChanged.connect(self.sort)
         #   self._sounds.append(s)
         # self.sort()
-        
+    
+    @QtCore.pyqtSlot(int, result=str)
+    def getWaveData(self, channel):
+      s = self._system.getWaveData(channel)
+      return s
 
     @QtCore.pyqtSlot()
     def killAll(self):

@@ -172,7 +172,10 @@ Rectangle {
         return x;
       }
       onClicked: {
-        modelData.doPlayStop();
+        if (mouse.button != Qt.RightButton) {
+          modelData.doPlayStop();
+          sound.editClicked();
+        }
       }
       
       onDragChanged: {

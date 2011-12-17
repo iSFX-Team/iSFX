@@ -6,7 +6,8 @@ Item {
   property variant model:[];
   property int focusIndex: 0;
   property alias tabHeight: row.height;
-  property string tabColor: "red";
+  property string tabColor: "gray";
+  property string activeTabColor: "orange";
   property string tabBackground: "darkgray";
   
   Rectangle {
@@ -23,7 +24,7 @@ Item {
         model: main.model.length
         delegate: Rectangle {
           id: this_delegate
-          color: main.tabColor
+          color: (focusIndex == index ? main.activeTabColor : main.tabColor)
           border.width: 1
           border.color: "black"
           height: parent.height - border.width;

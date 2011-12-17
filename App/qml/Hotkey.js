@@ -1,9 +1,9 @@
 function fromIndex(i) {
-  return indexToBill(i);
+  return indexToBillAscii(i);
 }
 
 function toIndex(i) {
-  return billToIndex(i);
+  return billAsciiToIndex(i);
 }
 
 function indexToBill(i) {
@@ -11,6 +11,12 @@ return "qwertyuiopasdfghjklzxcvbnm".charAt(i);
 }
 function billToIndex(k) {
 return "qwertyuiopasdfghjklzxcvbnm".indexOf(k);
+}
+function indexToBillAscii(i) {
+return "abcdefghijklmnopqrstuvwxyz".charAt(i);
+}
+function billAsciiToIndex(k) {
+return "abcdefghijklmnopqrstuvwxyz".indexOf(k);
 }
 
 function indexToQwerty(i) {

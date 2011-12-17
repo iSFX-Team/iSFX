@@ -8,6 +8,8 @@ from xml.etree.ElementTree import *
 
 from SoundData import SoundData
 from SoundBoard import SoundBoard
+from SvgFactory import SvgFactory
+from WaveFactory import WaveFactory
 
 if sys.platform == 'darwin':
   os.system("rm -f iSFX.so")
@@ -44,8 +46,15 @@ if __name__ == '__main__':
     canvas = QtDeclarative.QDeclarativeView()
     engine = canvas.engine()
     
+    factory = SvgFactory()
+    engine.addImageProvider("svg_from_string", factory);
+    
     system = iSFX.System()
     soundboard = SoundBoard(system, "../../sounds", "sounds.xml")
+    
+    
+    waveFactory = WaveFactory(soundboard._system.getWaveData)
+    engine.addImageProvider("waveFactory", waveFactory);
 
     engine.rootContext().setContextObject(soundboard)
     canvas.setSource(QtCore.QUrl.fromLocalFile('qml/main.qml'))

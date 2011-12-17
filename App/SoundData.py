@@ -52,6 +52,9 @@ class SoundData(QtCore.QObject):
     actualVolumeChanged = QtCore.pyqtSignal(float)
     
     waveformFileChanged = QtCore.pyqtSignal(str)
+    
+    lowPassFilterChanged = QtCore.pyqtSignal(int)
+    highPassFilterChanged = QtCore.pyqtSignal(int)
 
     def __init__(self):
         super(SoundData, self).__init__()
@@ -84,6 +87,8 @@ class SoundData(QtCore.QObject):
         self._actualVolume = 0.0
         
         self._waveformFile = ""
+        self._lowPassFilter = 0
+        self._highPassFilter = 0
         
     def setBackend(self, snd):
       self._backend = snd
@@ -96,6 +101,8 @@ class SoundData(QtCore.QObject):
       self.fadeOutChanged.connect(self._backend.setFadeOut)
       self.fadeStopChanged.connect(self._backend.setFadeStop)
       self.masterVolumeChanged.connect(self._backend.setMasterVolume)
+      self.lowPassFilterChanged.connect(self._backend.setLowPassFilter)
+      self.highPassFilterChanged.connect(self._backend.setHighPassFilter)
       
       if (self._length == 0):
         self._backend.onNameChanged(self.setName)
@@ -362,10 +369,26 @@ class SoundData(QtCore.QObject):
     @QtCore.pyqtProperty(str, fset=setWaveformFile, notify=waveformFileChanged)
     def waveformFile(self):
         return self._waveformFile
-
-
-
-
+        
+    # lowPassFilter
+    def setLowPassFilter(self, lowPassFilter):
+        if self._lowPassFilter != lowPassFilter:
+            self._lowPassFilter = lowPassFilter
+            self.lowPassFilterChanged.emit(self._lowPassFilter)
+    
+    @QtCore.pyqtProperty(int, fset=setLowPassFilter, notify=lowPassFilterChanged)
+    def lowPassFilter(self):
+        return self._lowPassFilter
+        
+    # highPassFilter
+    def sethighPassFilter(self, highPassFilter):
+        if self._highPassFilter != highPassFilter:
+            self._highPassFilter = highPassFilter
+            self.highPassFilterChanged.emit(self._highPassFilter)
+    
+    @QtCore.pyqtProperty(int, fset=sethighPassFilter, notify=highPassFilterChanged)
+    def highPassFilter(self):
+        return self._highPassFilter
 
     def __repr__(self):
             return repr((self._name, self._index))

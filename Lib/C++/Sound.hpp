@@ -105,6 +105,11 @@ struct Sound {
     float pan;
     int priority;
     
+    FMOD::DSP* highPassFilter;
+    bool highPassFiltering;
+    FMOD::DSP* lowPassFilter;
+    bool lowPassFiltering;
+    
   public:
     Sound(iSFX::System* sys, std::string u, uint32_t l, std::string waveformPath) 
       : system((System&)*sys),
@@ -130,9 +135,17 @@ struct Sound {
         fadeIn(1),
         fadeOut(1),
         fadeStop(1),
-        waveformPath(waveformPath)
+        waveformPath(waveformPath),
+        highPassFilter(NULL),
+        highPassFiltering(false),
+        lowPassFilter(NULL),
+        lowPassFiltering(false)
     {
+      system->createDSPByType(FMOD_DSP_TYPE_HIGHPASS, &highPassFilter);
+      system->createDSPByType(FMOD_DSP_TYPE_LOWPASS, &lowPassFilter);
       assert(system.system != NULL);
+      assert(highPassFilter != NULL);
+      assert(lowPassFilter != NULL);
     }
     
     void load() {
@@ -159,6 +172,8 @@ struct Sound {
     
     ~Sound() {
       if (playing) stop();
+      lowPassFilter->release();
+      highPassFilter->release();
       sound->release();
       std::cout << "Deconstructing sound object for '" << path << "'..." << std::endl;
     }
@@ -257,19 +272,56 @@ struct Sound {
     void update() {
       if (sound == NULL) return;
       paused = isPaused();
+      //std::cout << "paused: " << (paused ? "true" : "false") << std::endl;
       playing = isPlaying();
       
       // Get the current position of the sound and how long it has been since update()
       // executed last. 
       uint32_t new_pos = getPosition();
       int64_t dt = (int64_t)new_pos-(int64_t)position;
-      if (dt == 0) return;
+      //if (dt == 0) return;
       std::cout << "t: " << new_pos << " dt: " << dt << std::endl;
       //std::cout << "start: " << start << " stop: " << end << std::endl;
       
-      // If the start has skipped forward, skip forward.
       if (new_pos < start) {
         setPosition(start);
+      } else if (new_pos >= end) {
+        kill();
+      }
+      position = new_pos;
+      
+      // Manage Filters
+      //  Sometimes the filter will "pause" the sound, but not actually pause it. Pressing Esc. fixes this.
+      {
+        bool active = false;
+        FMOD_RESULT result = highPassFilter->getActive(&active);
+        if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
+        if (!active && highPassFiltering) {
+          printf("addDSP(highpass)");
+          FMOD_RESULT result = channel->addDSP(highPassFilter, 0);
+          printf(";\n");
+          if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
+        } else if (active && !highPassFiltering) {
+          printf("remove(highpass)");
+          FMOD_RESULT result = highPassFilter->remove();
+          printf(";\n");
+          if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
+        }
+      } {
+        bool active = false;
+        FMOD_RESULT result = lowPassFilter->getActive(&active);
+        if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
+        if (!active && lowPassFiltering) {
+          printf("addDSP(lowpass)");
+          FMOD_RESULT result = channel->addDSP(lowPassFilter, 0);
+          printf(";\n");
+          if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
+        } else if (active && !lowPassFiltering) {
+          printf("remove(lowpass)");
+          FMOD_RESULT result = lowPassFilter->remove();
+          printf(";\n");
+          if (result) printf("FMOD error! (%d) %s line: %d\n", result, FMOD_ErrorString(result), __LINE__);
+        }
       }
       
       // Calculate the volume based on start, end, fadeIn, fadeOut, and position
@@ -295,10 +347,6 @@ struct Sound {
         effectVolume = 0.0;
         fadingOut = false;
       }
-      if (new_pos >= end) {
-        kill();
-      }
-      position = new_pos;
       
       // Update volume
       float vol = (minVolume+effectVolume*(maxVolume-minVolume))*masterVolume;
@@ -495,6 +543,14 @@ struct Sound {
         else if (v > 1.0) v = 1.0;
         maxVolume = v;
       }
+    }
+    
+    void setHighPassFilter(bool b) {
+      highPassFiltering = b;
+    }
+    
+    void setLowPassFilter(bool b) {
+      lowPassFiltering = b;
     }
     
     void getWaveform(std::string filename, bool force=false) 
